@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Szeged Scavenger Hunt</title>
+<meta name="description" content="Build multimedia scavenger hunts, guided tours and quizzes. One file, no account, no server.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --ink:#0B2340; --ink-soft:#3F5D77; --paper:#FBFAF7;
+  --shoal:#D3E3DE; --shoal-deep:#B4CDC7; --sand:#EFE6D0;
+  --accent:#B5175C; --accent-tint:#F6E3EC; --accent-dark:#960F4B;
+  --rule:#C7D2DA; --ok:#1F6B4F; --ok-bg:#DDEDE4; --warn:#8A4B0B; --warn-bg:#F7E9DC;
+  --r:3px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"Barlow Semi Condensed","Roboto Condensed","Helvetica Neue",Arial,sans-serif;
+  font-size:17px; line-height:1.45; -webkit-text-size-adjust:100%; min-height:100vh;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='300' viewBox='0 0 420 300'><g fill='none' stroke='%230B2340' stroke-opacity='0.07' stroke-width='1'><path d='M-20 60 C 80 10, 180 110, 300 50 S 460 30, 480 90'/><path d='M-20 110 C 90 60, 190 160, 310 100 S 460 80, 480 140'/><path d='M-20 170 C 100 120, 200 220, 320 160 S 460 140, 480 200'/><path d='M-20 240 C 110 190, 210 290, 330 230 S 460 210, 480 270'/></g></svg>");
+}
+.wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 20px 90px}
+h1,h2,h3{margin:0;font-weight:600;line-height:1.15}
+.placename{font-family:Spectral,Georgia,"Times New Roman",serif;font-style:italic;font-weight:600}
+.lede{font-size:1.05rem;color:var(--ink-soft);max-width:62ch}
+.tiny{font-size:.86rem;color:var(--ink-soft)}
+a{color:var(--accent)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background:var(--shoal);padding:1px 4px;border-radius:2px}
+
+.masthead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:20px 0 14px;border-bottom:2px solid var(--ink)}
+.mark{display:flex;align-items:center;gap:9px;font-size:1.15rem;font-weight:700}
+.masthead .spacer{flex:1}
+
+button{font:inherit;color:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;min-height:44px;
+  border:1.5px solid var(--ink);border-radius:var(--r);background:var(--paper);color:var(--ink);font-weight:600;
+  cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--shoal)}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.primary:hover{background:#143252}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.go:hover{background:var(--accent-dark)}
+.btn.quiet{border-color:var(--rule);font-weight:500}
+.btn.quiet:hover{background:var(--shoal)}
+.btn.danger{border-color:var(--rule);color:var(--warn);font-weight:500}
+.btn.danger:hover{background:var(--warn-bg)}
+.btn.big{font-size:1.1rem;padding:14px 22px;min-height:54px;width:100%}
+.btn.sm{padding:6px 10px;min-height:36px;font-size:.9rem}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+
+label{display:block;font-size:.9rem;font-weight:600;margin:0 0 5px}
+.field{margin:0 0 16px}
+input[type=text],input[type=number],input[type=password],textarea,select{
+  width:100%;font:inherit;color:var(--ink);background:#fff;border:1.5px solid var(--rule);
+  border-radius:var(--r);padding:10px 12px;min-height:44px}
+textarea{min-height:92px;resize:vertical;line-height:1.4}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.hint{font-size:.85rem;color:var(--ink-soft);margin:4px 0 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.inline{display:flex;align-items:center;gap:8px}
+.inline label{margin:0;font-weight:500}
+.check{display:flex;align-items:center;gap:8px;min-height:40px}
+.check input{accent-color:var(--accent);width:20px;height:20px;flex:none}
+.check label{margin:0;font-weight:500}
+
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pills label{margin:0;display:flex;align-items:center;gap:7px;padding:8px 12px;min-height:42px;
+  border:1.5px solid var(--rule);border-radius:var(--r);cursor:pointer;font-weight:500;background:#fff}
+.pills input{accent-color:var(--accent);margin:0}
+.pills label:has(input:checked){border-color:var(--ink);background:var(--shoal);font-weight:600}
+.pills label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
+
+.build-grid{display:grid;grid-template-columns:300px 1fr;gap:26px;align-items:start;margin-top:22px}
+.ellist{border-top:1px solid var(--rule)}
+.ellist ol{margin:0;padding:0}
+.ellist li{list-style:none}
+.elrow{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 8px;background:none;
+  border:0;border-bottom:1px solid var(--rule);cursor:pointer;min-height:46px}
+.elrow:hover{background:var(--shoal)}
+.elrow.on{background:var(--ink);color:var(--paper)}
+.elrow.on .glyph{border-color:var(--paper);color:var(--paper)}
+.elrow:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.elrow.sect{background:var(--sand);font-weight:700;border-bottom:1.5px solid var(--ink-soft)}
+.elrow.sect.on{background:var(--ink)}
+.elrow.indent{padding-left:22px}
+.glyph{flex:none;width:24px;height:24px;border:1.5px solid currentColor;border-radius:var(--r);
+  display:grid;place-items:center;font-size:.72rem;font-weight:700}
+.elname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.elmeta{flex:none;font-size:.76rem;opacity:.75}
+
+.panel{border:1.5px solid var(--ink);border-radius:var(--r);background:#fff;padding:20px}
+.panel + .panel{margin-top:18px}
+.panelhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:0 0 12px;border-bottom:1px solid var(--rule)}
+.panelhead h2{font-size:1.3rem}
+.panelhead .spacer{flex:1}
+.sub{border:1px solid var(--rule);border-radius:var(--r);padding:14px;margin:0 0 16px;background:#FCFDFD}
+.sub > h3{font-size:1rem;margin:0 0 10px}
+
+.tabs{display:flex;gap:0;margin:18px 0 0;border-bottom:2px solid var(--ink);overflow-x:auto}
+.tab{padding:10px 15px;min-height:44px;background:none;border:0;border-bottom:4px solid transparent;
+  margin-bottom:-3px;cursor:pointer;font-weight:600;color:var(--ink-soft);white-space:nowrap}
+.tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+
+.empty{border:1.5px dashed var(--rule);border-radius:var(--r);padding:32px 20px;text-align:center;color:var(--ink-soft)}
+.empty p{margin:0 0 14px}
+
+.addmenu{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
+.addmenu button{text-align:left;padding:10px 12px;border:1.5px solid var(--rule);border-radius:var(--r);
+  background:#fff;cursor:pointer;min-height:56px}
+.addmenu button:hover{border-color:var(--ink);background:var(--shoal)}
+.addmenu b{display:block;font-size:.98rem}
+.addmenu span{font-size:.8rem;color:var(--ink-soft)}
+
+/* ---- player ---- */
+.play-wrap{max-width:660px;margin:0 auto}
+.punch{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0}
+.pip{width:18px;height:18px;transform:rotate(45deg);border:1.5px solid var(--ink-soft);flex:none}
+.pip.done{background:var(--accent);border-color:var(--accent);position:relative}
+.pip.done::after{content:"";position:absolute;inset:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-90deg) scale(.9)}
+.pip.miss{background:var(--warn-bg);border-color:var(--warn)}
+.pip.now{border-color:var(--accent);border-width:2.5px;box-shadow:0 0 0 3px var(--accent-tint)}
+.stage{border:2px solid var(--ink);border-radius:var(--r);background:#fff;padding:22px;margin:16px 0 0}
+.stage h2{font-size:1.55rem}
+.stagehead{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap}
+.body{font-size:1.15rem;line-height:1.5;white-space:pre-wrap;margin:12px 0 0}
+.media{margin:16px 0 0}
+.media img{display:block;width:100%;height:auto;border:1px solid var(--rule);border-radius:var(--r)}
+.media audio,.media video{width:100%;margin-top:10px;display:block}
+.media figcaption{font-size:.85rem;color:var(--ink-soft);margin-top:6px}
+.answerbox{margin:20px 0 0;padding:18px 0 0;border-top:1px solid var(--rule)}
+.answerbox input[type=text]{font-size:1.15rem;min-height:52px}
+.choices{display:grid;gap:8px}
+.choice{display:flex;align-items:flex-start;gap:10px;padding:13px 14px;border:1.5px solid var(--rule);
+  border-radius:var(--r);background:#fff;cursor:pointer;text-align:left;min-height:50px;width:100%}
+.choice:hover{border-color:var(--ink);background:var(--shoal)}
+.choice.picked{border-color:var(--accent);background:var(--accent-tint);font-weight:600}
+.choice.right{border-color:var(--ok);background:var(--ok-bg)}
+.choice.wrong{border-color:var(--warn);background:var(--warn-bg)}
+.choice:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.orderlist{display:grid;gap:7px}
+.orderrow{display:flex;align-items:center;gap:8px;border:1.5px solid var(--rule);border-radius:var(--r);
+  padding:8px 10px;background:#fff;min-height:50px}
+.orderrow .txt{flex:1}
+.spotwrap{position:relative;display:inline-block;max-width:100%;cursor:crosshair;touch-action:manipulation}
+.spotwrap img{display:block;max-width:100%;height:auto;border:1.5px solid var(--rule);border-radius:var(--r)}
+.marker{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border:3px solid var(--accent);
+  border-radius:50%;background:rgba(181,23,92,.22);pointer-events:none}
+.marker.target{border-color:var(--ok);background:rgba(31,107,79,.2)}
+.flash{margin:14px 0 0;padding:12px 14px;border-radius:var(--r);border-left:5px solid var(--rule);
+  background:var(--shoal);font-weight:600;white-space:pre-wrap}
+.flash.bad{border-left-color:var(--warn);background:var(--warn-bg);color:var(--warn)}
+.flash.good{border-left-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.flash.info{border-left-color:var(--accent);background:var(--accent-tint);color:var(--accent-dark)}
+.scorebar{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline;margin:12px 0 0;font-size:.95rem;color:var(--ink-soft)}
+.scorebar b{font-size:1.2rem;color:var(--ink);font-weight:700}
+.countdown{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink)}
+.countdown.low{color:var(--warn)}
+#map{height:280px;border:1.5px solid var(--ink);border-radius:var(--r);margin:16px 0 0}
+.compass{display:flex;align-items:center;gap:16px;margin:16px 0 0;padding:14px;border:1.5px solid var(--rule);border-radius:var(--r)}
+.needle{width:74px;height:74px;flex:none;border:2px solid var(--ink);border-radius:50%;position:relative;background:#fff}
+.needle i{position:absolute;left:50%;top:50%;width:0;height:0;margin-left:-9px;margin-top:-30px;
+  border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:30px solid var(--accent);
+  transform-origin:50% 100%;transition:transform .18s linear}
+.dist{font-size:1.6rem;font-weight:700;line-height:1}
+.finish{text-align:center;padding:26px 20px}
+.finish .bignum{font-family:Spectral,Georgia,serif;font-size:4rem;line-height:1;font-weight:600}
+.linkbox{display:block;width:100%;font-size:.82rem;word-break:break-all;background:var(--shoal);
+  border:1px solid var(--shoal-deep);border-radius:var(--r);padding:12px;max-height:130px;overflow:auto;
+  font-family:ui-monospace,Menlo,Consolas,monospace}
+#qrbox{margin:16px 0 0;display:flex;justify-content:center}
+#qrbox img,#qrbox canvas{border:10px solid #fff;outline:1px solid var(--rule)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin:18px 0 0}
+.card{border:2px dashed var(--ink-soft);border-radius:var(--r);padding:16px;text-align:center;background:#fff}
+.card .code{font-size:1.8rem;font-weight:700;letter-spacing:.05em;margin:8px 0 0;word-break:break-word}
+.card .qr{margin:12px auto 0;width:132px}
+.card .qr img,.card .qr canvas{width:100%;height:auto}
+table.grid{width:100%;border-collapse:collapse;margin-top:14px;font-size:.95rem}
+table.grid th,table.grid td{border-bottom:1px solid var(--rule);padding:9px 8px;text-align:left}
+table.grid th{font-size:.85rem;color:var(--ink-soft)}
+table.grid tr.top td{background:var(--accent-tint);font-weight:700}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumbs img{width:78px;height:78px;object-fit:cover;border:1px solid var(--rule);border-radius:var(--r)}
+.scan{position:relative;margin-top:14px}
+.scan video{width:100%;border:1.5px solid var(--ink);border-radius:var(--r);background:#000;display:block}
+@media print{
+  body::before,.masthead,.tabs,.noprint{display:none !important}
+  body{background:#fff;font-size:12pt}
+  .wrap{max-width:none;padding:0}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .card{break-inside:avoid;page-break-inside:avoid}
+}
+@media (max-width:860px){
+  .build-grid{grid-template-columns:1fr;gap:18px}
+  .two,.three{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead noprint">
+    <div class="mark">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+        <circle cx="11" cy="11" r="9" fill="none" stroke="#0B2340" stroke-width="2"/>
+        <circle cx="11" cy="11" r="3" fill="#B5175C"/>
+        <path d="M11 0v4M11 18v4M0 11h4M18 11h4" stroke="#0B2340" stroke-width="2"/>
+      </svg>
+      Waypoint
+    </div>
+    <div class="spacer"></div>
+    <div class="btnrow" id="navbtns"></div>
+  </header>
+  <main id="app"></main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/*HUNT_START*/window.WAYPOINT_DEFAULT = {
+  "v": 4,
+  "title": "Szeged Scavenger Hunt",
+  "accent": "#B5175C",
+  "minPlayers": 4,
+  "maxPlayers": 6,
+  "hintCost": 5,
+  "askNames": true,
+  "intro": "A walk through the middle of Szeged, in fifteen stops plus a start and a finish.\n\nSome stops ask a question. Some ask you to do something slightly ridiculous and photograph it. You cannot move on until the current one is done, and you will only be told where to go next once it is.\n\nThree things before you start.\nOne: keep the phone's location switched on, and keep this tab open.\nTwo: nobody has to do anything they are not comfortable with — swap the job to someone else in the team and carry on.\nThree: look up more than you look down. That is rather the point.",
+  "finish": "That is the whole ring. You walked the city the way it is actually built — as a set of rings and spokes laid out after the flood of 1879 washed almost all of it away.\n\nDownload your results before you close this. It has your photos in it.",
+  "stations": [
+    {
+      "id": "s00",
+      "name": "The starting line",
+      "lat": 46.251247, "lng": 20.141653, "radius": 80,
+      "nav": "You are already here, standing with your facilitator. Tap the button.",
+      "arrive": "Nothing to find yet. This is just the handshake between you and the game — if something is broken, now is the moment to say so, while there is still an adult in the room.",
+      "kind": "choice",
+      "prompt": "Are you ready?",
+      "options": [
+        { "t": "Yes", "ok": 1 },
+        { "t": "No", "ok": 0 },
+        { "t": "Ask us again after a coffee", "ok": 0 },
+        { "t": "Define 'ready'", "ok": 0 }
+      ],
+      "reveal": "Good. From here on you are on your own.\n\nEach stop gives you a direction and a distance, not an address. Walk until the number gets small. When the app lets you in, do what it asks, and then it will tell you where to go next.\n\nYou have about two and a half hours. Do not run. Szeged is small and the coffee is good.",
+      "points": 5
+    },
+
+    {
+      "id": "l00",
+      "name": "The man who saved more lives than any general",
+      "lat": 46.250328, "lng": 20.145775, "radius": 45,
+      "nav": "Head for a large open square with a fountain that students throw each other into after graduation. A long university building runs down one side of it. The statue you want stands in front of that building.",
+      "arrive": "The fountain is the loud part of this square. Turn your back on it and look at the man on the steps instead.",
+      "kind": "choice",
+      "prompt": "Look carefully at his feet. What is he doing?",
+      "options": [
+        { "t": "Stepping down from the fourth step to the third", "ok": 1 },
+        { "t": "Standing squarely on the top step", "ok": 0 },
+        { "t": "Climbing from the first step to the second", "ok": 0 },
+        { "t": "Standing on the ground, not on the steps at all", "ok": 0 }
+      ],
+      "hint": "Count the steps from the bottom. He is caught mid-stride, coming down.",
+      "reveal": "Albert Szent-Györgyi. He worked here, in this building, and in 1937 he took the Nobel Prize for isolating vitamin C — which he did in quantity from Szeged paprika, because paprika was what Szeged had a lot of.\n\nHe is walking down, not standing still, which is a deliberate choice by the sculptor. The man himself left Hungary in 1947 and never really came back.",
+      "points": 15
+    },
+
+    {
+      "id": "l01",
+      "name": "The jewel of Art Nouveau",
+      "lat": 46.251506, "lng": 20.145394, "radius": 45,
+      "nav": "Two hundred metres or so. Look for the whitest, strangest, most liquid-looking building in Szeged — the one that appears to be melting upwards. It sits on a corner where a boulevard bends.",
+      "navAlt": "Your first stop, and an easy one. Head east towards the middle of town — three hundred metres or so. Look for the whitest, strangest, most liquid-looking building in Szeged, the one that appears to be melting upwards. It sits on a corner where a boulevard bends.",
+      "arrive": "Stand back far enough to see the whole facade, then look at the very top corner of the building.",
+      "kind": "text",
+      "prompt": "What animal is sitting on the tip of the corner?",
+      "answer": "eagle|an eagle|sas|the eagle|eagles",
+      "hint": "It is a bird, and it is looking down a street that is named after it.",
+      "reveal": "The Reök Palace, finished in 1907 by Ede Magyar — the architect people call the Hungarian Gaudí, and who was thirty when he built this.\n\nThe whole facade is about water: those are water lilies, and the balcony railings are meant to read as weed swirling in a current. Which is a bold thing to put on a building in a city that had been destroyed by water twenty-eight years earlier.\n\nThe eagle is not decoration. It faces, and refers to, Fekete Sas — Black Eagle — Street.",
+      "points": 15
+    },
+
+    {
+      "id": "l02",
+      "name": "The dome on the west side",
+      "lat": 46.253827, "lng": 20.142664, "radius": 50,
+      "nav": "Go west, away from the river, into the quieter streets. You are looking for a very large dome that you will see over the rooftops before you see the building under it.",
+      "arrive": "Find a spot where you can see the front of the building properly.",
+      "kind": "photo",
+      "prompt": "{{player}} conducts. The rest of you are a choir — mouths wide open, arms out, completely silent. {{player}} takes it very seriously. One photo of the performance, with the building behind you.",
+      "reveal": "Szeged's New Synagogue, finished in 1903 to a design by Lipót Baumhorn, who built more synagogues than any architect in Europe. It is one of the largest anywhere, and it is still in use.\n\nWe put a silent choir here on purpose. The building was designed around sound and light — the dome, the glass — for a community that was a substantial part of this city and was almost entirely destroyed in 1944. Standing here quietly is not a bad way to spend a minute.",
+      "points": 15
+    },
+
+    {
+      "id": "l03",
+      "name": "The square with the good cake",
+      "lat": 46.252140, "lng": 20.147956, "radius": 45,
+      "nav": "Back east, towards the pedestrian heart of the city. You want a small rectangular square with a statue of a man in the middle of it, standing where the walking street widens out.",
+      "arrive": "This square is the busiest crossroads of pedestrian Szeged. Which is convenient, because you are about to need a stranger.",
+      "kind": "photo",
+      "prompt": "Find someone who lives here and ask them to teach {{player}} one Hungarian word — any word, their choice, not 'köszönöm'. {{player}} must then say it out loud, badly, three times. Photo of the lesson in progress, with your teacher in the frame and visibly willing.",
+      "hint": "Cafe terraces are easier than people walking somewhere. Try someone sitting down.",
+      "reveal": "Klauzál tér. In the summer of 1849, as the war of independence collapsed, Lajos Kossuth stood on a balcony on this square and gave what is remembered as his last public speech in Hungary. The statue is him.\n\nThe cake shop on the corner has been here since long before any of us. You are not required to go in. We simply mention it.",
+      "points": 15
+    },
+
+    {
+      "id": "l04",
+      "name": "The king who lost, and then rebuilt",
+      "lat": 46.254749, "lng": 20.149248, "radius": 45,
+      "nav": "Keep going north along the wide walking street until it opens into the biggest square in the city, with the town hall on one side and a park in the middle. Find the man on the horse.",
+      "navAlt": "Your first stop, and a proper walk to get there — north-east, the better part of a kilometre, straight into the middle of the city. You are heading for the biggest square in Szeged, with the town hall along one side and a park down the middle. Find the man on the horse.",
+      "arrive": "He is looking down the street you have just walked up. Get close enough to see what is in his hand.",
+      "kind": "choice",
+      "prompt": "What is he holding?",
+      "options": [
+        { "t": "A lance", "ok": 1 },
+        { "t": "A rolled-up charter", "ok": 0 },
+        { "t": "A drawn sword", "ok": 0 },
+        { "t": "A double cross", "ok": 0 }
+      ],
+      "hint": "Look for the long vertical line. The sculptor said he needed one for the composition to hold together.",
+      "reveal": "Béla IV — the king who was beaten badly by the Mongols at Muhi in 1241, ran for the coast, and then came back and rebuilt the country so thoroughly that Hungarians call him the second founder.\n\nSzeged got its charter as a free royal town out of that rebuilding. The statue went up in 2010, by Béla Tóth and his son Dávid. The pedestal is clad in salvaged brick to echo the castle that used to stand a few hundred metres from here — you will pass what is left of it.\n\nA note for your facilitator: several printed versions of this question say he holds a charter. He does not.",
+      "points": 20
+    },
+
+    {
+      "id": "l05",
+      "name": "The hot tap in the street",
+      "lat": 46.255819, "lng": 20.148644, "radius": 40,
+      "nav": "Only a short walk from the last one, at the northern end of the same square, near the boulevard. Look for people queuing with plastic bottles.",
+      "arrive": "There are four taps. Two run hot, two run cold. {{player}} has to taste the hot one and describe the flavour to the team in one word before you answer.",
+      "kind": "number",
+      "prompt": "How many degrees Celsius is the medicinal water?",
+      "answer": "51",
+      "tol": 2,
+      "hint": "It is written up on the well itself. Somewhere in the low fifties.",
+      "reveal": "The Anna Well. The water comes up from 944 metres down at about 51 °C, loaded with mineral salts, and was officially certified as medicinal in 1929.\n\nIt is named after Anna Judit Patzauer, the daughter of the man who started bottling it. People come here every single day with jugs. Whether it tastes good is a matter on which reasonable people differ, as {{player}} has just demonstrated.",
+      "points": 15
+    },
+
+    {
+      "id": "l06",
+      "name": "The engineers' pantheon",
+      "lat": 46.258389, "lng": 20.150210, "radius": 55,
+      "nav": "The longest walk of the game — about half a kilometre north. Aim for the tall concrete tower you can see above the trees. There is a park all the way around its base.",
+      "arrive": "Walk a full circle around the base of the tower and look at the busts set around it.",
+      "kind": "number",
+      "prompt": "How many engineers are honoured around the tower?",
+      "answer": "7",
+      "tol": 0,
+      "hint": "Fewer than ten. Walk the whole circle — it is easy to miss one behind you.",
+      "reveal": "The Engineer Pantheon. Seven half-length portraits of Hungarian engineers, arranged around a tower that is itself the argument.\n\nOne of the seven is Szilárd Zielinsky, who designed this in 1904 — the first reinforced concrete water tower in Hungary, built entirely of concrete down to the front door. Another is János Feketeházy, who built Szeged's first road bridge. Another is Béla Zsigmondy, who drilled the artesian wells that the city still drinks from, including the one you tasted.\n\nThis city was rebuilt by engineers, and it decided to say so out loud.",
+      "points": 15
+    },
+
+    {
+      "id": "l07",
+      "name": "The theatre by the river",
+      "lat": 46.253555, "lng": 20.151954, "radius": 45,
+      "nav": "Go back south and east, towards the river. You are looking for the most ornate building on the riverside — the sort with a colonnade, statues on the roofline and a great deal of confidence.",
+      "navAlt": "Your first stop is right across town — head east, towards the river, about a kilometre. When you reach the water, look for the most ornate building on the riverside: colonnade, statues along the roofline, and a great deal of confidence.",
+      "arrive": "The steps at the front are your stage.",
+      "kind": "photo",
+      "prompt": "{{player}} and {{player}} perform a ten-second tragedy on the steps. It must have a beginning, a middle, and a death. Recruit one passer-by to be the audience and applaud. Photo taken mid-performance, audience visible.",
+      "hint": "Ten seconds is short. Skip the beginning.",
+      "reveal": "The National Theatre of Szeged, opened in 1883 — four years after the flood, while much of the city was still building site. It was designed by Fellner and Helmer, the Viennese firm that put near-identical theatres into dozens of cities across the empire.\n\nThat is the point of it. Putting up an opera house that early was Szeged announcing that it intended to be a proper city again, not a disaster site.",
+      "points": 15
+    },
+
+    {
+      "id": "l08",
+      "name": "The hotel that lost its name",
+      "lat": 46.254385, "lng": 20.153077, "radius": 45,
+      "nav": "Head along the riverside promenade. You want a large old building that has been, in its time, a hotel, a restaurant and a ballroom, and is now where students go at night.",
+      "arrive": "Read the sign on the front. Read it as it is today, not as it was.",
+      "kind": "text",
+      "prompt": "What is the place called now?",
+      "answer": "hungi|hungi vigado|hungi vigadó",
+      "hint": "It is a nickname — a shortened, friendlier form of the name it was given in 1934.",
+      "reveal": "It was the Kass Hotel, and it was the grandest address in Szeged. The building was auctioned off and reopened in 1934, but the Kass family would not let the new owners keep the name, so it became the Hungária.\n\nWhich the city promptly shortened to Hungi, and Hungi it has stayed for ninety years. Names given by owners rarely survive names given by everybody else.",
+      "points": 15
+    },
+
+    {
+      "id": "l09",
+      "name": "Fourteen names",
+      "lat": 46.252281, "lng": 20.152079, "radius": 50,
+      "nav": "Continue south along the river. Look for a big columned building set back behind a square, the sort that looks like it contains either a museum or a government.",
+      "arrive": "You want the front of the building. The answer is written there, in front of you — you only have to count.",
+      "kind": "number",
+      "prompt": "How many different names has this city had since it was founded?",
+      "answer": "14",
+      "tol": 0,
+      "hint": "More than ten, fewer than twenty. They are listed in front of the museum.",
+      "reveal": "Fourteen. Every one of them a version of the same sound, written down by a different scribe in a different century, in a different language, by people who were mostly guessing.\n\nThe museum is named after Ferenc Móra, who ran it — and who was simultaneously a novelist, a journalist and a working archaeologist. A useful reminder for a training course that the job description you arrive with is not always the one you leave with.",
+      "points": 15
+    },
+
+    {
+      "id": "l10",
+      "name": "What the water left",
+      "lat": 46.252888, "lng": 20.152467, "radius": 45,
+      "nav": "Very close now — a short walk south along the promenade. Look for old brick walls and a low fragment of fortification sitting in a park, obviously much older than everything around it.",
+      "navAlt": "Your first stop is over by the river — head east, about a kilometre, until you hit the riverside promenade. Then look for old brick walls and a low fragment of fortification sitting in a park, obviously much older than everything around it.",
+      "arrive": "This is nearly all that is left of it.",
+      "kind": "photo",
+      "prompt": "{{player}} is the last brick standing. The rest of the team is the flood of 1879. Stage the moment just before the brick goes under. One photo, maximum drama.",
+      "reveal": "Szeged Castle. In March 1879 the Tisza broke through and took the city — of roughly 5,700 houses, fewer than 300 were left standing. The castle survived the water and then did not survive the rebuilding: it was pulled down, and its brick went into the new city.\n\nSo the castle is not really gone. It is in the walls around you. That is also why the pedestal under Béla IV is clad in salvaged brick.",
+      "points": 15
+    },
+
+    {
+      "id": "l11",
+      "name": "One day only",
+      "lat": 46.250461, "lng": 20.152017, "radius": 40,
+      "nav": "Keep going south on the embankment, towards the bridge. You are looking for a sculpture right by the water, showing something alive rather than someone important.",
+      "arrive": "Look at the shapes properly before you answer — they are insects, not plants.",
+      "kind": "choice",
+      "prompt": "What natural event is this sculpture showing?",
+      "options": [
+        { "t": "The mass swarming of mayflies over the river", "ok": 1 },
+        { "t": "The spring migration of storks", "ok": 0 },
+        { "t": "The flood of 1879", "ok": 0 },
+        { "t": "The paprika harvest", "ok": 0 }
+      ],
+      "hint": "It happens for a few days each June, above the water, and it is the reason the sculpture is called what it is.",
+      "reveal": "The Tiszavirág — the Tisza flower, which is not a flower at all but the long-tailed mayfly, Palingenia longicauda. For a few days each June they come out of the river in their millions, mate in the air above it, and die the same day. Locals call it the blooming of the Tisza.\n\nThe statue was unveiled on 22 May 2004. It is the city's emblem, and it is an insect with a one-day adult life. Szeged has a good sense of proportion about itself.",
+      "points": 15
+    },
+
+    {
+      "id": "l12",
+      "name": "The poet on the promenade",
+      "lat": 46.250756, "lng": 20.151704, "radius": 40,
+      "nav": "Barely a minute from where you are. Another figure on the same riverside walk — a seated man, not an insect this time. There is a poem on the pedestal.",
+      "arrive": "{{player}} reads the poem on the pedestal out loud to the team, in Hungarian, with total conviction and no idea what any of it means.",
+      "kind": "text",
+      "prompt": "Who is he? Family name is enough.",
+      "answer": "juhasz|juhász|gyula juhasz|juhasz gyula|juhász gyula|gyula juhász",
+      "hint": "It is carved on the pedestal along with the poem.",
+      "reveal": "Gyula Juhász, born in Szeged in 1883. He taught, worked as a journalist, and wrote about this river and this cathedral until his death in 1937.\n\nHe is the reason a certain kind of Hungarian melancholy is associated with the Tisza at all. The poem on the pedestal is his, and it is about walking quietly beside the water — which, unless {{player}} did it very badly indeed, is roughly what you have just been doing.",
+      "points": 15
+    },
+
+    {
+      "id": "l13",
+      "name": "The best team that never won it",
+      "lat": 46.248574, "lng": 20.151295, "radius": 40,
+      "nav": "Carry on south along the riverside park. You want a column in the grass with football boots on it and a list of names on the pedestal.",
+      "navAlt": "Your first stop is on the far side of the old town — head east and slightly south, towards the river, the better part of a kilometre. You want the riverside park, and in it a column standing in the grass with football boots on top and a list of names on the pedestal.",
+      "arrive": "Read the pedestal. The names are in a fixed order and you want one particular position in the list.",
+      "kind": "text",
+      "prompt": "Who coached them? Family name is enough.",
+      "answer": "sebes|gusztav sebes|gusztáv sebes|sebes gusztav|sebes gusztáv",
+      "hint": "His name is twelfth on the list on the pedestal.",
+      "reveal": "The Aranycsapat — the Golden Team. Between 1950 and 1956 they went unbeaten for thirty-three matches, took Olympic gold, and beat England 6–3 at Wembley, which no continental side had ever done. Then they lost the 1954 World Cup final to West Germany, having beaten the same team 8–3 two weeks earlier.\n\nThe coach was Gusztáv Sebes. Puskás got the fame; Sebes built the system — including the deep-lying centre forward that the rest of Europe spent a decade trying to understand.",
+      "points": 15
+    },
+
+    {
+      "id": "l14",
+      "name": "The oldest thing here",
+      "lat": 46.248604, "lng": 20.148561, "radius": 40,
+      "nav": "Turn away from the river and head west, into the huge brick square with the enormous twin-towered church. In front of the church stands something much smaller and much, much older.",
+      "arrive": "You want the door of the little tower, not the cathedral. Look above and around the entrance. {{player}} is in charge of finding the numbers; everyone else may only point.",
+      "kind": "text",
+      "prompt": "What two numbers are hidden on the door? Type both, separated by a space.",
+      "answer": "1272 1931|1931 1272",
+      "hint": "Two four-digit years, roughly six and a half centuries apart.",
+      "reveal": "The Dömötör Tower — the oldest building in Szeged, standing on this spot long before the cathedral was built around it.\n\n1272 is the medieval tower. 1931 is when it was restored and turned into a baptistery, which is also when the wrought iron gate above the entrance was made, full of biblical symbols about life.\n\nThe cathedral behind it is barely a hundred years old. It was a vow made after the flood: if the city survived, it would build something enormous. It survived, and it did.",
+      "points": 20
+    },
+
+    {
+      "id": "s99",
+      "name": "The finish",
+      "lat": 46.247459, "lng": 20.141736, "radius": 45,
+      "nav": "Last leg, and no puzzle at the end of it. Head south-west and follow the arrow — depending on where you have ended up, this can be a good deal further than you expect, so do not dawdle. You are looking for a small green space beside the university library. Your facilitator is somewhere in it, probably checking a phone.",
+      "arrive": "You made it.",
+      "kind": "none",
+      "prompt": "",
+      "reveal": "Done. Fifteen stops, one city, one ring closed.\n\nWhile you wait for the others: work out which stop you would cut, and which one you would add. You are on an outdoor education course. That question is the course.",
+      "points": 10
+    }
+  ],
+
+  "routes": [
+    { "name": "Route A — Green", "seq": ["s00", "l01", "l02", "l03", "l04", "l05", "l06", "l07", "l08", "l09", "l10", "l11", "l12", "l13", "l14", "l00", "s99"] },
+    { "name": "Route B — Blue", "seq": ["s00", "l04", "l05", "l06", "l07", "l08", "l09", "l10", "l11", "l12", "l13", "l14", "l00", "l01", "l02", "l03", "s99"] },
+    { "name": "Route C — Amber", "seq": ["s00", "l07", "l08", "l09", "l10", "l11", "l12", "l13", "l14", "l00", "l01", "l02", "l03", "l04", "l05", "l06", "s99"] },
+    { "name": "Route D — Red", "seq": ["s00", "l10", "l11", "l12", "l13", "l14", "l00", "l01", "l02", "l03", "l04", "l05", "l06", "l07", "l08", "l09", "s99"] },
+    { "name": "Route E — Violet", "seq": ["s00", "l13", "l14", "l00", "l01", "l02", "l03", "l04", "l05", "l06", "l07", "l08", "l09", "l10", "l11", "l12", "s99"] }
+  ]
+};/*HUNT_END*/
+(function () {
+"use strict";
+
+/* ========== storage (Claude artifact, local file, or self-hosted) ========== */
+var store = (function () {
+  var mem = {}, ws = (window.storage && typeof window.storage.get === "function"), ls = false;
+  if (!ws) { try { localStorage.setItem("__wp__","1"); localStorage.removeItem("__wp__"); ls = true; } catch (e) {} }
+  return {
+    get: function (k) {
+      if (ws) return window.storage.get(k).then(function (r) { return r ? r.value : null; }).catch(function () { return null; });
+      if (ls) { try { return Promise.resolve(localStorage.getItem(k)); } catch (e) {} }
+      return Promise.resolve(k in mem ? mem[k] : null);
+    },
+    set: function (k, v) {
+      if (ws) return window.storage.set(k, v).catch(function () {});
+      if (ls) { try { localStorage.setItem(k, v); return Promise.resolve(); } catch (e) {} }
+      mem[k] = v; return Promise.resolve();
+    },
+    del: function (k) {
+      if (ws) return window.storage.delete(k).catch(function () {});
+      if (ls) { try { localStorage.removeItem(k); return Promise.resolve(); } catch (e) {} }
+      delete mem[k]; return Promise.resolve();
+    }
+  };
+})();
+
+/* ========== helpers ========== */
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var app = $("#app"), navbtns = $("#navbtns");
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function num(v,d){ var n=Number(v); return isFinite(n)?n:d; }
+function normalize(s){
+  var t=String(s==null?"":s).trim().toLowerCase();
+  try{ t=t.normalize("NFD").replace(/[\u0300-\u036f]/g,""); }catch(e){}
+  return t.replace(/[^0-9a-z]+/g,"");
+}
+function matches(given, accepted){
+  var g=normalize(given); if(!g) return false;
+  return String(accepted||"").split("|").some(function(a){ var n=normalize(a); return n && n===g; });
+}
+function b64encode(o){ var b=new TextEncoder().encode(JSON.stringify(o)),s=""; for(var i=0;i<b.length;i++) s+=String.fromCharCode(b[i]);
+  return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function b64decode(str){ var s=String(str).replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="=";
+  var bin=atob(s),b=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) b[i]=bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(b)); }
+function metres(la1,lo1,la2,lo2){ var R=6371000,t=Math.PI/180,dLa=(la2-la1)*t,dLo=(lo2-lo1)*t;
+  var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*t)*Math.cos(la2*t)*Math.sin(dLo/2)*Math.sin(dLo/2);
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(a))); }
+function bearing(la1,lo1,la2,lo2){ var t=Math.PI/180;
+  var y=Math.sin((lo2-lo1)*t)*Math.cos(la2*t);
+  var x=Math.cos(la1*t)*Math.sin(la2*t)-Math.sin(la1*t)*Math.cos(la2*t)*Math.cos((lo2-lo1)*t);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360; }
+function far(d){ return d<1000?Math.round(d)+" m":(d/1000).toFixed(1)+" km"; }
+function compassWord(deg){
+  var w=["north","north-east","east","south-east","south","south-west","west","north-west"];
+  return w[Math.round(deg/45)%8];
+}
+function clock(ms){ var s=Math.max(0,Math.round(ms/1000)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;
+  var p=function(n){return n<10?"0"+n:""+n;}; return (h?h+":"+p(m):m)+":"+p(ss); }
+function fp(str){ var h=5381; for(var i=0;i<str.length;i++) h=((h<<5)+h+str.charCodeAt(i))|0; return "h"+(h>>>0).toString(36); }
+function shuffleSeeded(a,seed){ var r=a.slice(),s=seed||1;
+  var rnd=function(){ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; };
+  for(var i=r.length-1;i>0;i--){ var j=Math.floor(rnd()*(i+1)),t=r[i]; r[i]=r[j]; r[j]=t; } return r; }
+
+/* ========== model ========== */
+var KINDS = { choice:"Multiple choice", text:"Typed answer", number:"A number", photo:"Photo proof", none:"Just arrive" };
+var SHORT = { choice:"choice", text:"text", number:"number", photo:"photo", none:"arrive only" };
+
+function newStation(){
+  return { id:uid(), name:"New station", lat:null, lng:null, radius:35,
+    nav:"", navAlt:"", arrive:"", kind:"choice", prompt:"", options:[{t:"",ok:true},{t:"",ok:false}],
+    answer:"", tol:0, hint:"", reveal:"", points:10 };
+}
+function blankHunt(){
+  return { v:4, title:"Untitled hunt", intro:"", finish:"", accent:"#B5175C",
+    minPlayers:4, maxPlayers:6, hintCost:5, askNames:true,
+    stations:[newStation()], routes:[{ name:"Route A", seq:[] }] };
+}
+function repair(h){
+  if(!h||typeof h!=="object"||!Array.isArray(h.stations)) throw new Error("bad");
+  var out={ v:4, title:h.title||"Untitled hunt", intro:h.intro||"", finish:h.finish||"",
+    accent:/^#[0-9a-fA-F]{6}$/.test(h.accent||"")?h.accent:"#B5175C",
+    minPlayers:num(h.minPlayers,4), maxPlayers:num(h.maxPlayers,6),
+    hintCost:num(h.hintCost,5), askNames:h.askNames!==false, stations:[], routes:[] };
+  h.stations.forEach(function(r){
+    var s=newStation(); s.id=r.id||uid();
+    ["name","nav","navAlt","arrive","prompt","answer","hint","reveal","kind"].forEach(function(k){ if(r[k]!=null) s[k]=r[k]; });
+    if(!KINDS[s.kind]) s.kind="none";
+    ["radius","tol","points"].forEach(function(k){ if(r[k]!=null) s[k]=num(r[k],s[k]); });
+    s.lat = (r.lat==null||r.lat==="")?null:num(r.lat,null);
+    s.lng = (r.lng==null||r.lng==="")?null:num(r.lng,null);
+    if(Array.isArray(r.options)) s.options=r.options.map(function(o){
+      return typeof o==="string"?{t:o,ok:false}:{t:o.t||"",ok:!!o.ok}; });
+    out.stations.push(s);
+  });
+  if(!out.stations.length) out.stations=[newStation()];
+  var ids={}; out.stations.forEach(function(s){ ids[s.id]=1; });
+  (Array.isArray(h.routes)?h.routes:[]).forEach(function(r){
+    if(!r||!Array.isArray(r.seq)) return;
+    out.routes.push({ name:r.name||"Route", seq:r.seq.filter(function(id){ return ids[id]; }) });
+  });
+  if(!out.routes.length) out.routes=[{ name:"Route A", seq:out.stations.map(function(s){return s.id;}) }];
+  return out;
+}
+function slim(h){
+  var d=newStation(), base=blankHunt();
+  var o={ v:4, title:h.title, stations:[], routes:h.routes };
+  ["intro","finish"].forEach(function(k){ if(h[k]) o[k]=h[k]; });
+  ["accent","minPlayers","maxPlayers","hintCost"].forEach(function(k){ if(h[k]!==base[k]) o[k]=h[k]; });
+  if(h.askNames===false) o.askNames=false;
+  h.stations.forEach(function(s){
+    var x={ id:s.id, name:s.name, lat:s.lat, lng:s.lng };
+    ["nav","navAlt","arrive","prompt","answer","hint","reveal"].forEach(function(k){ if(s[k]) x[k]=s[k]; });
+    if(s.kind!==d.kind) x.kind=s.kind;
+    ["radius","tol","points"].forEach(function(k){ if(s[k]!==d[k]) x[k]=s[k]; });
+    if(s.kind==="choice" && s.options.some(function(p){return p.t;}))
+      x.options=s.options.map(function(p){ return {t:p.t,ok:p.ok?1:0}; });
+    o.stations.push(x);
+  });
+  return o;
+}
+
+/* ========== state ========== */
+var S = { screen:"home", hunt:null, stale:null, sel:0, tab:"stations", routeSel:0,
+          prog:null, flash:null, testing:false, busy:false, tries:0, board:[] };
+var MEDIA = {};
+var LIVE = { pos:null, heading:null, watch:null, map:null, marker:null, tick:null };
+
+/* ========== name tokens ========== */
+/* Assigns every {{player}} slot in the team's route so that each name is used
+   before any name repeats. Stable across refreshes because it lives in prog. */
+var FIELDS=["nav","navAlt","arrive","prompt","reveal","hint"];
+function buildNameSlots(){
+  var p=S.prog, names=(p.players||[]).filter(function(n){ return n.trim(); });
+  p.slots={};
+  if(!names.length) return;
+  var seq=routeSeq(), pool=shuffleSeeded(names,p.seed), k=0, cycle=pool.slice();
+  seq.forEach(function(st){
+    FIELDS.forEach(function(f){
+      var n=(String(st[f]||"").match(/\{\{player\}\}/g)||[]).length;
+      if(!n) return;
+      if(!p.slots[st.id]) p.slots[st.id]={};
+      p.slots[st.id][f]=[];
+      for(var i=0;i<n;i++){
+        if(!cycle.length) cycle=shuffleSeeded(pool,p.seed+(++k));
+        p.slots[st.id][f].push(cycle.shift());
+      }
+    });
+  });
+}
+function fill(text, station, field){
+  if(!text) return "";
+  var p=S.prog, names=(p&&p.players||[]).filter(function(n){return n.trim();});
+  var per=(p&&p.slots&&station&&p.slots[station.id])||{};
+  var slots=per[field]||[];
+  var i=0;
+  var out=String(text).replace(/\{\{player\}\}/g,function(){
+    var n=slots[i++];
+    if(n) return n;
+    if(!names.length) return "one of you";
+    return names[(fpNum(String(text))+i)%names.length];
+  });
+  out=out.replace(/\{\{everyone\}\}/g, names.length?listNames(names):"everyone");
+  out=out.replace(/\{\{team\}\}/g, (p&&p.team)||"your team");
+  return out;
+}
+function fpNum(t){ var h=0; for(var i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))>>>0; return h; }
+function listNames(a){
+  if(a.length===1) return a[0];
+  return a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+}
+function namesUsed(){
+  var p=S.prog, used={};
+  Object.keys(p.slots||{}).forEach(function(id){
+    if((p.done||[]).indexOf(id)<0) return;
+    var per=p.slots[id]||{};
+    Object.keys(per).forEach(function(f){ (per[f]||[]).forEach(function(n){ used[n]=1; }); });
+  });
+  return used;
+}
+function namesLeft(){
+  var used=namesUsed();
+  return (S.prog.players||[]).filter(function(n){ return n.trim() && !used[n]; });
+}
+
+/* ========== route helpers ========== */
+function stationById(id){
+  for(var i=0;i<S.hunt.stations.length;i++) if(S.hunt.stations[i].id===id) return S.hunt.stations[i];
+  return null;
+}
+function routeSeq(){
+  var r=S.hunt.routes[(S.prog&&S.prog.route)||0]||S.hunt.routes[0];
+  return (r.seq||[]).map(stationById).filter(Boolean);
+}
+function current(){ var q=routeSeq(); return q[S.prog.i]||null; }
+
+/* ========== progress ========== */
+function huntKey(){ return "wp:prog:"+fp(S.hunt.stations.map(function(s){return s.id;}).join()+S.hunt.title); }
+function newProgress(){
+  return { i:0, phase:"nav", begun:false, route:0, team:"", players:[],
+           done:[], answers:{}, score:0, started:Date.now(), ended:null,
+           hinted:[], overrides:[], seed:Math.floor(Math.random()*1e6)+1, slots:{} };
+}
+function loadProgress(){
+  return store.get(huntKey()).then(function(raw){
+    if(raw){ try{ S.prog=JSON.parse(raw); }catch(e){ S.prog=newProgress(); } }
+    else S.prog=newProgress();
+    return store.get(huntKey()+":media");
+  }).then(function(raw){
+    if(raw){ try{ MEDIA=JSON.parse(raw)||{}; }catch(e){ MEDIA={}; } }
+  });
+}
+function saveProgress(){ if(S.prog&&!S.testing) store.set(huntKey(), JSON.stringify(S.prog)); }
+function saveMedia(){ if(!S.testing) store.set(huntKey()+":media", JSON.stringify(MEDIA)).catch(function(){}); }
+
+/* ========== boot ========== */
+function boot(){
+  var hash=location.hash||"";
+  var rm=hash.match(/[#&]r=(\d+)/);
+  if(/[#&]play\b/.test(hash) && window.WAYPOINT_DEFAULT){
+    try{
+      S.hunt=repair(window.WAYPOINT_DEFAULT); accent(S.hunt.accent); S.screen="play";
+      loadProgress().then(function(){
+        if(rm && !S.prog.begun){ var ri=+rm[1]; if(S.hunt.routes[ri]){ S.prog.route=ri; S.prog.fixedRoute=true; } }
+        render();
+      });
+      return;
+    }catch(e){}
+  }
+  var m=hash.match(/[#&]h=([^&]+)/);
+  if(m){
+    try{
+      S.hunt=repair(b64decode(m[1])); accent(S.hunt.accent); S.screen="play";
+      var rm=(location.hash||"").match(/[#&]r=(\d+)/);
+      loadProgress().then(function(){
+        if(rm && !S.prog.begun){
+          var ri=+rm[1];
+          if(S.hunt.routes[ri]){ S.prog.route=ri; S.prog.fixedRoute=true; }
+        }
+        render();
+      });
+      return;
+    }catch(e){ S.flash={kind:"bad",msg:"That hunt link is damaged and couldn't be opened."}; }
+  }
+  var draft=null;
+  store.get("wp:draft").then(function(raw){ draft=raw; return store.get("wp:touched"); })
+   .then(function(touched){
+    if(draft && touched){ try{ S.hunt=repair(JSON.parse(draft)); }catch(e){} }
+    else if(draft){ try{ S.stale=repair(JSON.parse(draft)); }catch(e){} }
+    if(!S.hunt && window.WAYPOINT_DEFAULT){ try{ S.hunt=repair(window.WAYPOINT_DEFAULT); }catch(e){} }
+    if(!S.hunt && S.stale){ S.hunt=S.stale; S.stale=null; }
+    if(S.hunt) accent(S.hunt.accent);
+    render();
+  });
+}
+function accent(hex){
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex||"")) hex="#B5175C";
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  var dk="#"+[r,g,b].map(function(c){return ("0"+Math.round(c*.78).toString(16)).slice(-2);}).join("");
+  document.documentElement.style.setProperty("--accent",hex);
+  document.documentElement.style.setProperty("--accent-dark",dk);
+  document.documentElement.style.setProperty("--accent-tint","rgba("+r+","+g+","+b+",.13)");
+}
+function saveDraft(){
+  if(!S.hunt) return;
+  store.set("wp:draft", JSON.stringify(S.hunt));
+  store.set("wp:touched","1");
+}
+
+/* ========== render chrome ========== */
+function render(){
+  stopLive();
+  if(S.screen==="home") renderHome();
+  else if(S.screen==="build") renderBuild();
+  else if(S.screen==="play") renderPlay();
+  else if(S.screen==="board") renderBoard();
+  window.scrollTo(0,0);
+}
+function flashHTML(){ return S.flash?'<div class="flash '+S.flash.kind+'">'+esc(S.flash.msg)+"</div>":""; }
+function stopLive(){
+  if(LIVE.watch!==null){ try{ navigator.geolocation.clearWatch(LIVE.watch); }catch(e){} LIVE.watch=null; }
+  if(LIVE.tick){ clearInterval(LIVE.tick); LIVE.tick=null; }
+  if(LIVE.map){ try{ LIVE.map.remove(); }catch(e){} LIVE.map=null; LIVE.marker=null; }
+  window.removeEventListener("deviceorientationabsolute", onHeading, true);
+  window.removeEventListener("deviceorientation", onHeading, true);
+}
+function onHeading(e){
+  var h=null;
+  if(e.webkitCompassHeading!=null) h=e.webkitCompassHeading;
+  else if(e.absolute && e.alpha!=null) h=360-e.alpha;
+  if(h==null) return;
+  LIVE.heading=h;
+  var n=$("#needle");
+  if(n && LIVE.pos && S.prog.phase==="nav"){
+    var st=current();
+    if(st && st.lat!=null){
+      var b=bearing(LIVE.pos.lat,LIVE.pos.lng,st.lat,st.lng);
+      n.style.transform="rotate("+(b-h)+"deg)";
+    }
+  }
+}
+
+/* ========== home ========== */
+function renderHome(){
+  navbtns.innerHTML="";
+  var h=S.hunt;
+  app.innerHTML=
+  '<section style="padding:40px 0 10px">'+
+    '<h1 class="placename" style="font-size:clamp(2.2rem,7vw,3.4rem);max-width:17ch">Send people out to look for things.</h1>'+
+    '<p class="lede" style="margin-top:16px">One HTML file. Build a route of stations, hand players a link, and they walk the city with their phone. '+
+      'No app, no account, nothing to pay. Keep the file and it keeps working.</p>'+
+    flashHTML()+
+    (h?'<div class="panel" style="margin-top:24px"><div class="panelhead"><h2 class="placename">'+esc(h.title)+'</h2></div>'+
+        '<p class="tiny">'+h.stations.length+" stations · "+h.routes.length+" routes</p>"+
+        '<div class="btnrow" style="margin-top:14px">'+
+          '<button class="btn go" data-act="resume">Open it</button>'+
+          '<button class="btn quiet" data-act="testplay">Test play</button>'+
+        "</div></div>":"")+
+    (window.WAYPOINT_DEFAULT && (!h || h.title!==window.WAYPOINT_DEFAULT.title)
+      ? '<div class="flash info" style="margin-top:16px">This browser is showing a hunt you edited earlier rather than the one built into the file. '+
+        '<button class="btn quiet sm" style="margin-top:8px" data-act="restore">Load the built-in game</button></div>' : "")+
+    '<div class="btnrow" style="margin-top:22px">'+
+      '<button class="btn'+(h?' quiet':' go')+'" data-act="new">Start a blank hunt</button>'+
+      '<button class="btn quiet" data-act="import">Open a hunt file</button>'+
+      '<button class="btn quiet" data-act="board">Scoreboard</button>'+
+    "</div>"+
+  "</section>";
+  S.flash=null;
+}
+/* ========== player ========== */
+function renderPlay(){
+  var h=S.hunt, p=S.prog;
+  navbtns.innerHTML = S.testing
+    ? '<span class="tiny">Test run</span><button class="btn quiet sm" data-act="backtobuild">Back to building</button>'
+    : (p.begun?'<button class="btn quiet sm" data-act="resetprog">Start again</button>':"");
+
+  if(!p.begun){ renderJoin(); return; }
+  var q=routeSeq();
+  if(p.i>=q.length){ renderFinish(); return; }
+  var st=q[p.i];
+
+  var pips=q.map(function(s,i){
+    return '<span class="pip'+(p.done.indexOf(s.id)>=0?" done":(i===p.i?" now":""))+'"></span>';
+  }).join("");
+  var head='<div style="padding-top:20px"><div class="punch">'+pips+"</div>"+
+    '<div class="scorebar"><span><b>'+p.score+'</b> points</span>'+
+    '<span><b>'+p.done.length+"</b> of "+q.length+" done</span>"+
+    '<span>Elapsed <b class="countdown" id="elapsed">'+clock(Date.now()-p.started)+"</b></span></div></div>";
+
+  if(p.phase==="nav") app.innerHTML='<div class="play-wrap">'+head+navCard(st,q)+"</div>";
+  else if(p.phase==="task") app.innerHTML='<div class="play-wrap">'+head+taskCard(st)+"</div>";
+  else app.innerHTML='<div class="play-wrap">'+head+revealCard(st,q)+"</div>";
+
+  S.flash=null;
+  LIVE.tick=setInterval(function(){
+    var el=$("#elapsed"); if(el) el.textContent=clock(Date.now()-p.started);
+  },1000);
+  if(p.phase==="nav") startNav(st);
+  var box=$("#ans");
+  if(box){ box.focus(); box.addEventListener("keydown",function(e){ if(e.key==="Enter") checkAnswer(); }); }
+}
+
+function renderJoin(){
+  var h=S.hunt;
+  var rows="";
+  for(var i=0;i<h.maxPlayers;i++){
+    rows+='<input type="text" class="pname" placeholder="'+(i<h.minPlayers?"Name "+(i+1)+" (required)":"Name "+(i+1)+" (optional)")+
+      '" value="'+esc((S.prog.players||[])[i]||"")+'" style="margin-bottom:8px">';
+  }
+  var routes=h.routes.map(function(r,i){
+    return '<label><input type="radio" name="route" value="'+i+'"'+(S.prog.route===i?" checked":"")+">"+esc(r.name)+"</label>";
+  }).join("");
+  app.innerHTML='<div class="play-wrap"><section style="padding:30px 0 0">'+
+    '<h1 class="placename" style="font-size:clamp(1.9rem,6vw,2.8rem)">'+esc(h.title)+"</h1>"+
+    (h.intro?'<p class="lede" style="margin-top:14px;white-space:pre-wrap">'+esc(h.intro)+"</p>":"")+
+    '<div class="panel" style="margin-top:22px">'+
+      '<div class="field"><label for="team">Team name</label><input type="text" id="team" value="'+esc(S.prog.team)+'" placeholder="Pick something memorable"></div>'+
+      (h.askNames?'<div class="field"><label>Who is in the team? ('+h.minPlayers+"–"+h.maxPlayers+" people)</label>"+rows+
+        '<p class="hint">The game will call people by name and give them jobs, so spell them the way you want to be shouted at in the street.</p></div>':"")+
+      (h.routes.length>1&&!S.prog.fixedRoute?'<div class="field"><label>Which route did the facilitator give you?</label><div class="pills">'+routes+"</div></div>":"")+
+      flashHTML()+
+      '<button class="btn go big" data-act="begin">Start</button>'+
+    "</div></section></div>";
+  S.flash=null;
+}
+
+function navCard(st,q){
+  var body="", useAlt=(S.prog.i===1 && st.navAlt);
+  var walk=useAlt?st.navAlt:st.nav, walkField=useAlt?"navAlt":"nav";
+  if(st.lat==null||st.lng==null){
+    body='<p class="body">'+esc(fill(walk,st,walkField))+"</p>"+
+      '<div class="answerbox"><button class="btn go big" data-act="arrived">We are there</button></div>';
+  }else{
+    body='<p class="body">'+esc(fill(walk,st,walkField))+"</p>"+
+      '<div class="compass"><div class="needle"><i id="needle"></i></div>'+
+        '<div><div class="dist" id="dist">—</div><div class="tiny" id="dirword">Finding you…</div></div></div>'+
+      '<div id="map"></div>'+
+      '<div class="answerbox"><button class="btn go big" data-act="checkgps"'+(S.busy?" disabled":"")+">"+
+        (S.busy?"Checking…":"We're here — check")+"</button>"+
+        (S.tries>=3?'<button class="btn quiet" style="width:100%;margin-top:10px" data-act="override">GPS won\'t cooperate — let us in</button>':"")+
+      "</div>";
+  }
+  return '<article class="stage">'+
+    '<div class="stagehead"><span class="glyph">'+(S.prog.i+1)+"</span>"+
+      '<span class="tiny">Station '+(S.prog.i+1)+" of "+q.length+" · getting there</span></div>"+
+    '<h2 class="placename">Next stop</h2>'+body+flashHTML()+"</article>";
+}
+
+function taskCard(st){
+  var p=S.prog, input="";
+  if(st.kind==="choice"){
+    input='<div class="choices">'+st.options.filter(function(o){return o.t;}).map(function(o,i){
+      return '<button class="choice" data-pick="'+i+'">'+esc(fill(o.t,st,"opt"))+"</button>";
+    }).join("")+"</div>";
+  }else if(st.kind==="text"){
+    input='<label for="ans">Your answer</label><input type="text" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false">'+
+      '<button class="btn go big" style="margin-top:12px" data-act="check">Check answer</button>';
+  }else if(st.kind==="number"){
+    input='<label for="ans">Your answer — a number</label><input type="text" id="ans" inputmode="decimal" autocomplete="off">'+
+      '<button class="btn go big" style="margin-top:12px" data-act="check">Check answer</button>';
+  }else if(st.kind==="photo"){
+    var got=MEDIA[st.id];
+    input=(got?'<div class="thumbs"><img src="'+got+'" alt="Your photo"></div>':"")+
+      '<label class="btn big" style="margin-top:'+(got?"12px":"0")+'" for="shot">'+(got?"Retake the photo":"Take the photo")+"</label>"+
+      '<input type="file" id="shot" accept="image/*" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0">'+
+      (got?'<button class="btn go big" style="margin-top:10px" data-act="submitphoto">Submit and carry on</button>':"");
+  }else{
+    input='<button class="btn go big" data-act="check">Done — carry on</button>';
+  }
+  var hint = st.hint && p.hinted.indexOf(st.id)<0
+    ? '<button class="btn quiet" style="width:100%;margin-top:10px" data-act="hint">Hint (−'+S.hunt.hintCost+" points)</button>" : "";
+  return '<article class="stage">'+
+    '<div class="stagehead"><span class="glyph">'+(p.i+1)+'</span><span class="tiny">'+esc(KINDS[st.kind])+"</span></div>"+
+    '<h2 class="placename">'+esc(fill(st.name,st,"name"))+"</h2>"+
+    (st.arrive?'<p class="body">'+esc(fill(st.arrive,st,"arrive"))+"</p>":"")+
+    '<div class="answerbox">'+(st.prompt?'<p class="body" style="margin-top:0;font-weight:600">'+esc(fill(st.prompt,st,"prompt"))+"</p>":"")+
+      input+hint+"</div>"+flashHTML()+"</article>";
+}
+
+function revealCard(st,q){
+  var last=S.prog.i>=q.length-1;
+  return '<article class="stage">'+
+    '<div class="stagehead"><span class="glyph">✓</span><span class="tiny">solved</span></div>'+
+    '<h2 class="placename">'+esc(fill(st.name,st,"name"))+"</h2>"+
+    (st.reveal?'<p class="body">'+esc(fill(st.reveal,st,"reveal"))+"</p>":"")+
+    '<div class="answerbox"><button class="btn go big" data-act="next">'+
+      (last?"Finish the game":"Where next?")+"</button></div></article>";
+}
+
+/* ---- navigation ---- */
+function startNav(st){
+  if(st.lat==null||st.lng==null) return;
+  if(window.L && $("#map")){
+    try{
+      LIVE.map=L.map("map",{zoomControl:true,attributionControl:true}).setView([st.lat,st.lng],16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {maxZoom:19,attribution:"© OpenStreetMap"}).addTo(LIVE.map);
+      L.circle([st.lat,st.lng],{radius:st.radius,color:"#B5175C",weight:2,fillOpacity:.12}).addTo(LIVE.map);
+    }catch(e){ var m=$("#map"); if(m) m.style.display="none"; }
+  }else{ var mm=$("#map"); if(mm) mm.style.display="none"; }
+
+  if(!navigator.geolocation) return;
+  LIVE.watch=navigator.geolocation.watchPosition(function(pos){
+    LIVE.pos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
+    var d=metres(LIVE.pos.lat,LIVE.pos.lng,st.lat,st.lng);
+    var de=$("#dist"), dw=$("#dirword");
+    if(de) de.textContent=far(d);
+    if(dw) dw.textContent="Head "+compassWord(bearing(LIVE.pos.lat,LIVE.pos.lng,st.lat,st.lng))+
+      (LIVE.pos.acc?" · accurate to "+Math.round(LIVE.pos.acc)+" m":"");
+    var n=$("#needle");
+    if(n && LIVE.heading==null) n.style.transform="rotate("+bearing(LIVE.pos.lat,LIVE.pos.lng,st.lat,st.lng)+"deg)";
+    if(LIVE.map){
+      if(!LIVE.marker) LIVE.marker=L.circleMarker([LIVE.pos.lat,LIVE.pos.lng],{radius:7,color:"#0B2340",fillColor:"#0B2340",fillOpacity:1}).addTo(LIVE.map);
+      else LIVE.marker.setLatLng([LIVE.pos.lat,LIVE.pos.lng]);
+    }
+  },function(){},{enableHighAccuracy:true,timeout:20000,maximumAge:5000});
+
+  if(window.DeviceOrientationEvent){
+    window.addEventListener("deviceorientationabsolute",onHeading,true);
+    window.addEventListener("deviceorientation",onHeading,true);
+  }
+}
+function checkGPS(){
+  var st=current();
+  if(!navigator.geolocation){ S.flash={kind:"bad",msg:"This browser can't read your location."}; S.tries=3; render(); return; }
+  S.busy=true; render();
+  navigator.geolocation.getCurrentPosition(function(pos){
+    S.busy=false;
+    var d=metres(pos.coords.latitude,pos.coords.longitude,st.lat,st.lng);
+    var slack=Math.min(pos.coords.accuracy||0,25);
+    if(d<=st.radius+slack){ S.tries=0; arrive(); }
+    else{ S.tries++; S.flash={kind:"bad",msg:"Still about "+far(d)+" away. Keep walking."}; render(); }
+  },function(err){
+    S.busy=false; S.tries++;
+    S.flash={kind:"bad",msg:err.code===1?"Location is blocked. Allow it for this page, then try again.":"No location fix yet — step into the open and try again."};
+    render();
+  },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
+function arrive(){
+  var st=current();
+  S.prog.phase = st.kind==="none" ? "reveal" : "task";
+  if(st.kind==="none") complete(st,"arrived",true);
+  else { saveProgress(); render(); }
+}
+
+/* ---- answering ---- */
+function complete(st,value,ok){
+  var p=S.prog;
+  if(p.done.indexOf(st.id)<0){
+    p.done.push(st.id);
+    if(ok) p.score+=num(st.points,0);
+  }
+  p.answers[st.id]={ v:value, ok:!!ok, t:Date.now() };
+  p.phase="reveal";
+  saveProgress(); render();
+}
+function checkAnswer(){
+  var st=current(), p=S.prog;
+  if(st.kind==="none"){ complete(st,"arrived",true); return; }
+  var box=$("#ans"), given=box?box.value:"";
+  if(!given.trim()){ S.flash={kind:"info",msg:"Put something in the box first."}; render(); return; }
+  var ok=false;
+  if(st.kind==="number"){
+    var g=parseFloat(String(given).replace(",","."));
+    ok=String(st.answer).split("|").some(function(a){
+      var t=parseFloat(a); return isFinite(g)&&isFinite(t)&&Math.abs(g-t)<=num(st.tol,0);
+    });
+  }else ok=matches(given,st.answer);
+  if(ok) complete(st,given,true);
+  else{ S.flash={kind:"bad",msg:"Not it. Look again — you can't move on until this is right."}; render(); }
+}
+function pickChoice(i){
+  var st=current(), opts=st.options.filter(function(o){return o.t;});
+  var o=opts[i];
+  if(o&&o.ok) complete(st,o.t,true);
+  else{ S.flash={kind:"bad",msg:"Not that one. Try again."}; render(); }
+}
+function useHint(){
+  var st=current(), p=S.prog;
+  if(p.hinted.indexOf(st.id)<0){ p.hinted.push(st.id); p.score=Math.max(0,p.score-num(S.hunt.hintCost,0)); }
+  S.flash={kind:"info",msg:fill(st.hint,st,"hint")};
+  saveProgress(); render();
+}
+function shrink(file,cb){
+  var r=new FileReader();
+  r.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      var max=1100, w=img.width, hgt=img.height;
+      if(Math.max(w,hgt)>max){ var k=max/Math.max(w,hgt); w=Math.round(w*k); hgt=Math.round(hgt*k); }
+      var c=document.createElement("canvas"); c.width=w; c.height=hgt;
+      c.getContext("2d").drawImage(img,0,0,w,hgt);
+      cb(c.toDataURL("image/jpeg",0.7));
+    };
+    img.onerror=function(){ cb(null); };
+    img.src=r.result;
+  };
+  r.onerror=function(){ cb(null); };
+  r.readAsDataURL(file);
+}
+
+/* ---- finish + report ---- */
+function renderFinish(){
+  var h=S.hunt, p=S.prog, q=routeSeq();
+  if(!p.ended){ p.ended=Date.now(); saveProgress(); }
+  var left=namesLeft();
+  var extra = left.length
+    ? '<div class="flash info" style="text-align:left">Before you claim the finish: '+esc(listNames(left))+
+      ' never got called out by name during the walk. Put that right — one group photo where '+esc(listNames(left))+
+      ' '+(left.length>1?"are":"is")+' front and centre, doing your best impression of a statue you passed today.</div>'
+    : "";
+  app.innerHTML='<div class="play-wrap"><section class="finish">'+
+    '<div class="punch" style="justify-content:center">'+q.map(function(){return '<span class="pip done"></span>';}).join("")+"</div>"+
+    '<h1 class="placename" style="font-size:2.2rem;margin-top:20px">'+(p.team?esc(p.team)+" finished":"Finished")+"</h1>"+
+    (h.finish?'<p class="lede" style="margin:14px auto 0;text-align:left;white-space:pre-wrap">'+esc(fill(h.finish,null,"finish"))+"</p>":"")+
+    extra+
+    '<div class="bignum" style="margin-top:24px">'+p.score+"</div>"+
+    '<p class="tiny">points · '+clock(p.ended-p.started)+" on the clock · "+p.done.length+" stations</p>"+
+    '<div class="btnrow" style="justify-content:center;margin-top:24px">'+
+      '<button class="btn go" data-act="report">Download our results</button>'+
+      '<button class="btn quiet" data-act="copyresult">Copy score for the facilitator</button>'+
+    "</div>"+
+    (S.testing?'<div class="btnrow" style="justify-content:center;margin-top:12px"><button class="btn quiet" data-act="backtobuild">Back to building</button></div>':"")+
+  "</section></div>";
+}
+function resultCode(){
+  var p=S.prog;
+  return b64encode({t:p.team,pl:p.players.filter(function(n){return n.trim();}),
+    s:p.score,ms:(p.ended||Date.now())-p.started,n:p.done.length,r:(S.hunt.routes[p.route]||{}).name||""});
+}
+function buildReport(){
+  var h=S.hunt, p=S.prog, q=routeSeq();
+  var rows=q.map(function(st,i){
+    var a=p.answers[st.id]||{}, img=MEDIA[st.id];
+    return "<section><h3>"+(i+1)+". "+esc(fill(st.name,st,"name"))+"</h3>"+
+      (st.prompt?"<p><em>"+esc(fill(st.prompt,st,"prompt"))+"</em></p>":"")+
+      '<p class="'+(a.ok?"ok":"no")+'">'+(a.v?esc(String(a.v)):"— not reached —")+"</p>"+
+      (p.hinted.indexOf(st.id)>=0?"<p class=h>hint used</p>":"")+
+      (p.overrides.indexOf(st.id)>=0?"<p class=h>GPS override used</p>":"")+
+      (img?'<img src="'+img+'">':"")+"</section>";
+  }).join("");
+  return "<!DOCTYPE html><html><head><meta charset=utf-8><title>"+esc(h.title)+" — "+esc(p.team)+"</title>"+
+    "<style>body{font-family:system-ui,sans-serif;max-width:760px;margin:30px auto;padding:0 18px;color:#0B2340;line-height:1.5}"+
+    "h1{margin:0 0 4px}h3{margin:22px 0 4px;font-size:1.05rem}img{max-width:100%;border:1px solid #ccc;margin-top:8px}"+
+    ".ok{color:#1F6B4F;font-weight:700}.no{color:#8A4B0B;font-weight:700}.h{color:#666;font-size:.85rem;margin:2px 0}"+
+    "section{border-bottom:1px solid #eee;padding-bottom:14px}</style></head><body>"+
+    "<h1>"+esc(h.title)+"</h1><p><b>"+esc(p.team)+"</b> · "+esc((S.hunt.routes[p.route]||{}).name||"")+
+    " · "+esc(listNames(p.players.filter(function(n){return n.trim();})))+"</p>"+
+    "<p>"+p.score+" points · "+clock((p.ended||Date.now())-p.started)+" · "+p.done.length+" of "+q.length+" stations</p>"+
+    rows+"</body></html>";
+}
+function download(name,text,type){
+  var b=new Blob([text],{type:type||"application/json"}), a=document.createElement("a");
+  a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+}
+
+/* ---- scoreboard ---- */
+function renderBoard(){
+  navbtns.innerHTML='<button class="btn quiet sm" data-act="home">Close</button>';
+  var rows=S.board.slice().sort(function(a,b){ return b.s-a.s || a.ms-b.ms; }).map(function(r,i){
+    return '<tr'+(i===0?' class="top"':"")+"><td>"+(i+1)+"</td><td>"+esc(r.t||"—")+"</td><td>"+esc(r.r||"")+
+      "</td><td>"+r.s+"</td><td>"+clock(r.ms)+"</td><td>"+r.n+"</td></tr>";
+  }).join("");
+  app.innerHTML='<div class="panel" style="margin-top:22px">'+
+    '<div class="panelhead"><h2 class="placename">Scoreboard</h2></div>'+
+    '<p class="lede" style="font-size:1rem">Each team gets a short code on their finish screen. Paste them in here one at a time to rank the teams.</p>'+
+    '<div class="field" style="margin-top:14px"><label for="code">Paste a team code</label>'+
+      '<input type="text" id="code" placeholder="eyJ0IjoiVGVhbSByZWQi…"></div>'+
+    '<div class="btnrow"><button class="btn go" data-act="addcode">Add team</button>'+
+      (S.board.length?'<button class="btn danger" data-act="clearboard">Clear the board</button>':"")+"</div>"+
+    flashHTML()+
+    (S.board.length?'<table class="grid"><tr><th>#</th><th>Team</th><th>Route</th><th>Points</th><th>Time</th><th>Stations</th></tr>'+rows+"</table>":"")+
+  "</div>";
+  S.flash=null;
+}
+/* ========== builder ========== */
+function renderBuild(){
+  var h=S.hunt;
+  navbtns.innerHTML='<button class="btn quiet sm" data-act="home">Close</button>'+
+    '<button class="btn quiet sm" data-act="gopublish">Publish</button>'+
+    '<button class="btn primary sm" data-act="testplay">Test play</button>';
+  var body = S.tab==="stations"?stationsTab() : S.tab==="routes"?routesTab()
+           : S.tab==="settings"?settingsTab() : shareTab();
+  app.innerHTML='<div class="tabs noprint">'+
+    tab("stations","Stations")+tab("routes","Routes")+tab("settings","Settings")+tab("share","Share &amp; publish")+"</div>"+
+    (S.tab==="stations"?body:'<div style="margin-top:20px">'+body+"</div>");
+  if(S.tab==="share") h.routes.forEach(function(r,i){ drawQR($("#qr"+i), shortURL(i), 150); });
+  S.flash=null;
+}
+function tab(id,label){ return '<button class="tab'+(S.tab===id?" on":"")+'" data-tab="'+id+'">'+label+"</button>"; }
+
+function stationsTab(){
+  var h=S.hunt;
+  var list=h.stations.map(function(s,i){
+    return '<li><button class="elrow'+(i===S.sel?" on":"")+'" data-sel="'+i+'">'+
+      '<span class="glyph">'+(i+1)+"</span><span class=\"elname\">"+esc(s.name)+"</span>"+
+      '<span class="elmeta">'+(s.lat==null?"no GPS":SHORT[s.kind])+"</span></button></li>";
+  }).join("");
+  return '<div class="build-grid"><nav class="ellist"><ol>'+list+"</ol>"+
+    '<button class="btn quiet" style="width:100%;margin-top:12px" data-act="addstation">Add station</button></nav>'+
+    "<div>"+stationEditor()+"</div></div>";
+}
+function stationEditor(){
+  var s=S.hunt.stations[S.sel];
+  if(!s) return '<div class="empty"><p>No stations yet.</p></div>';
+  var kinds=Object.keys(KINDS).map(function(k){
+    return '<label><input type="radio" name="kind" value="'+k+'"'+(s.kind===k?" checked":"")+">"+KINDS[k]+"</label>";
+  }).join("");
+  var kf="";
+  if(s.kind==="choice"){
+    kf='<div class="sub"><h3>Options — tick the correct one</h3>'+
+      s.options.map(function(o,i){
+        return '<div class="inline" style="margin-bottom:8px">'+
+          '<input type="checkbox" data-ok="'+i+'"'+(o.ok?" checked":"")+' style="width:22px;height:22px;flex:none;accent-color:var(--accent)">'+
+          '<input type="text" data-opt="'+i+'" value="'+esc(o.t)+'" placeholder="Option '+(i+1)+'">'+
+          '<button class="btn quiet sm" data-act="delopt" data-i="'+i+'">×</button></div>';
+      }).join("")+
+      '<button class="btn quiet sm" data-act="addopt">Add option</button></div>';
+  }else if(s.kind==="text"){
+    kf='<div class="field"><label for="f-answer">Accepted answers</label>'+
+      '<input type="text" id="f-answer" data-f="answer" value="'+esc(s.answer)+'">'+
+      '<p class="hint">Case, spaces and accents are ignored. Separate alternatives with a vertical bar: <code>sebes|gusztav sebes</code></p></div>';
+  }else if(s.kind==="number"){
+    kf='<div class="two"><div class="field"><label for="f-answer">Correct number</label>'+
+      '<input type="text" id="f-answer" data-f="answer" value="'+esc(s.answer)+'"></div>'+
+      '<div class="field"><label for="f-tol">Accept within ±</label><input type="number" id="f-tol" data-f="tol" value="'+s.tol+'"></div></div>';
+  }else if(s.kind==="photo"){
+    kf='<p class="hint" style="margin:-8px 0 16px">The photo is accepted as-is — nobody can check it in the street. It lands in the team\'s results file for you to look at afterwards.</p>';
+  }
+  return '<div class="panel">'+
+    '<div class="panelhead"><h2 class="placename">Station '+(S.sel+1)+'</h2><div class="spacer"></div>'+
+      '<div class="btnrow"><button class="btn quiet sm" data-act="up"'+(S.sel===0?" disabled":"")+">Up</button>"+
+      '<button class="btn quiet sm" data-act="down"'+(S.sel===S.hunt.stations.length-1?" disabled":"")+">Down</button>"+
+      '<button class="btn quiet sm" data-act="dupe">Duplicate</button>'+
+      '<button class="btn danger sm" data-act="del">Delete</button></div></div>'+
+    '<div class="field"><label for="f-name">Station name — players see this on arrival</label>'+
+      '<input type="text" id="f-name" data-f="name" value="'+esc(s.name)+'"></div>'+
+    '<div class="three">'+
+      '<div class="field"><label for="f-lat">Latitude</label><input type="text" id="f-lat" data-f="lat" value="'+(s.lat==null?"":s.lat)+'"></div>'+
+      '<div class="field"><label for="f-lng">Longitude</label><input type="text" id="f-lng" data-f="lng" value="'+(s.lng==null?"":s.lng)+'"></div>'+
+      '<div class="field"><label for="f-radius">Arrive within (m)</label><input type="number" id="f-radius" data-f="radius" value="'+s.radius+'"></div>'+
+    "</div>"+
+    '<div class="btnrow" style="margin:-4px 0 16px"><button class="btn quiet sm" data-act="here">Use my location</button>'+
+      (s.lat!=null?'<a class="btn quiet sm" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat='+s.lat+"&mlon="+s.lng+"#map=18/"+s.lat+"/"+s.lng+'">Check on a map</a>':"")+"</div>"+
+    '<div class="field"><label for="f-nav">Directions — shown while they walk (no street name!)</label>'+
+      '<textarea id="f-nav" data-f="nav">'+esc(s.nav)+"</textarea>"+
+      '<p class="hint">Write these as if the team is arriving from the station before this one in the ring. That is the same for every route.</p></div>'+
+    '<div class="field"><label for="f-navAlt">Directions if this is the team\'s <em>first</em> stop</label>'+
+      '<textarea id="f-navAlt" data-f="navAlt" placeholder="Only needed if some route opens with this station — they will be arriving from the start point, not from the ring.">'+esc(s.navAlt)+"</textarea></div>"+
+    '<div class="field"><label for="f-arrive">On arrival</label><textarea id="f-arrive" data-f="arrive">'+esc(s.arrive)+"</textarea></div>"+
+    '<div class="field"><label>What unlocks the next station</label><div class="pills">'+kinds+"</div></div>"+
+    '<div class="field"><label for="f-prompt">The question or task</label><textarea id="f-prompt" data-f="prompt">'+esc(s.prompt)+"</textarea></div>"+
+    kf+
+    '<div class="two"><div class="field"><label for="f-hint">Hint they can buy</label><input type="text" id="f-hint" data-f="hint" value="'+esc(s.hint)+'"></div>'+
+      '<div class="field"><label for="f-points">Points</label><input type="number" id="f-points" data-f="points" value="'+s.points+'"></div></div>'+
+    '<div class="field"><label for="f-reveal">What they read once they get it right</label><textarea id="f-reveal" data-f="reveal">'+esc(s.reveal)+"</textarea></div>"+
+    '<p class="hint">Write <code>{{player}}</code> to have the game name one team member — every name gets used before any repeats. <code>{{everyone}}</code> lists them all, <code>{{team}}</code> is the team name.</p>'+
+  "</div>";
+}
+
+function routesTab(){
+  var h=S.hunt, r=h.routes[S.routeSel];
+  var tabs=h.routes.map(function(x,i){
+    return '<button class="btn'+(i===S.routeSel?" primary":" quiet")+' sm" data-route="'+i+'">'+esc(x.name)+"</button>";
+  }).join("");
+  var seq=(r?r.seq:[]).map(function(id,i){
+    var st=stationById(id);
+    return '<div class="orderrow"><span class="glyph">'+(i+1)+'</span><span class="txt">'+esc(st?st.name:"missing")+"</span>"+
+      '<button class="btn quiet sm" data-act="rup" data-i="'+i+'">↑</button>'+
+      '<button class="btn quiet sm" data-act="rdown" data-i="'+i+'">↓</button>'+
+      '<button class="btn quiet sm" data-act="rdel" data-i="'+i+'">×</button></div>';
+  }).join("");
+  var avail=h.stations.map(function(st){ return '<option value="'+st.id+'">'+esc(st.name)+"</option>"; }).join("");
+  return '<div class="panel">'+
+    '<div class="panelhead"><h2 class="placename">Routes</h2></div>'+
+    '<p class="lede" style="font-size:1rem">Every team walks the same ring of stations, but starts at a different point on it and in a different direction. That is what stops five teams arriving at the same statue at once.</p>'+
+    '<div class="btnrow" style="margin-top:14px">'+tabs+'<button class="btn quiet sm" data-act="addroute">+ route</button></div>'+
+    (function(){
+      var bad=h.routes.filter(function(x){ var f=stationById(x.seq[1]); return f && !f.navAlt; });
+      return bad.length ? '<div class="flash bad" style="margin-top:16px">Opening directions missing: '+
+        bad.map(function(x){ return esc(x.name)+" starts at "+esc((stationById(x.seq[1])||{}).name||"?"); }).join("; ")+
+        '. Those teams walk from the start point, not from the ring, so that station needs its own opening-leg text.</div>' : "";
+    })()+
+    (r?'<div class="field" style="margin-top:18px;max-width:320px"><label for="f-rname">Route name</label>'+
+      '<input type="text" id="f-rname" data-r="name" value="'+esc(r.name)+'"></div>'+
+      '<div class="orderlist">'+(seq||'<p class="tiny">No stations in this route yet.</p>')+"</div>"+
+      '<div class="inline" style="margin-top:12px"><select id="addst">'+avail+"</select>"+
+        '<button class="btn quiet" data-act="raddst">Add</button></div>'+
+      '<div class="btnrow" style="margin-top:14px"><button class="btn danger sm" data-act="delroute">Delete this route</button></div>':"")+
+  "</div>"+
+  '<div class="panel"><div class="panelhead"><h2 class="placename">Spread teams around the ring</h2></div>'+
+    '<p class="lede" style="font-size:1rem">Take the route above, keep the first and last station fixed, and rotate everything in between. Each generated route covers exactly the same stations in a different, still-walkable order.</p>'+
+    '<div class="two" style="margin-top:14px">'+
+      '<div class="field"><label for="nrot">How many routes</label><input type="number" id="nrot" value="5" min="2" max="12"></div>'+
+      '<div class="field"><label for="pinends">Keep fixed</label><select id="pinends">'+
+        '<option value="both">First and last station</option><option value="first">First station only</option>'+
+        '<option value="none">Nothing — rotate everything</option></select></div>'+
+    "</div>"+
+    '<button class="btn go" data-act="rotate">Generate the routes</button>'+
+    '<p class="hint">This replaces the current route list.</p></div>';
+}
+
+function settingsTab(){
+  var h=S.hunt;
+  return '<div class="panel"><div class="panelhead"><h2 class="placename">Hunt settings</h2></div>'+
+    '<div class="field"><label for="f-title">Title</label><input type="text" id="f-title" data-h="title" value="'+esc(h.title)+'"></div>'+
+    '<div class="field"><label for="f-intro">Opening screen</label><textarea id="f-intro" data-h="intro">'+esc(h.intro)+"</textarea></div>"+
+    '<div class="field"><label for="f-finish">Closing screen</label><textarea id="f-finish" data-h="finish">'+esc(h.finish)+"</textarea></div>"+
+    '<div class="three">'+
+      '<div class="field"><label for="f-min">Smallest team</label><input type="number" id="f-min" data-h="minPlayers" value="'+h.minPlayers+'"></div>'+
+      '<div class="field"><label for="f-max">Biggest team</label><input type="number" id="f-max" data-h="maxPlayers" value="'+h.maxPlayers+'"></div>'+
+      '<div class="field"><label for="f-hc">A hint costs</label><input type="number" id="f-hc" data-h="hintCost" value="'+h.hintCost+'"></div>'+
+    "</div>"+
+    '<div class="check"><input type="checkbox" id="f-an" data-h="askNames"'+(h.askNames?" checked":"")+'><label for="f-an">Ask for everyone\'s name at the start</label></div>'+
+    '<div class="field" style="margin-top:16px;max-width:200px"><label for="f-accent">Accent colour</label>'+
+      '<input type="text" id="f-accent" data-h="accent" value="'+esc(h.accent)+'"></div>'+
+  "</div>"+
+  '<div class="panel"><div class="panelhead"><h2 class="placename">Backups</h2></div>'+
+    '<div class="btnrow"><button class="btn quiet" data-act="export">Download hunt file</button>'+
+      '<button class="btn quiet" data-act="import">Open a hunt file</button>'+
+      '<button class="btn danger" data-act="wipe">Start from blank</button></div></div>';
+}
+
+function publishPanel(){
+  return '<div class="panel"><div class="panelhead"><h2 class="placename">Publish your edits</h2></div>'+
+    '<p class="lede" style="font-size:1rem">Anything you change in the builder lives in this browser only. The hosted file your teams open still contains whatever was baked into it. These two buttons close that gap.</p>'+
+    '<div class="btnrow" style="margin-top:14px">'+
+      '<button class="btn go" data-act="rebake">Download a ready-to-host copy</button>'+
+      '<button class="btn" data-act="sheet">Download the facilitator sheet</button></div>'+
+    '<p class="hint">Upload the first file over the one on your web host and every team link below serves your current text. The second is the printable answer sheet, rebuilt from whatever is in the builder right now.</p></div>';
+}
+
+function shareURL(routeIdx){
+  return location.href.split("#")[0]+"#h="+b64encode(slim(S.hunt))+(routeIdx?"&r="+routeIdx:"");
+}
+function shortURL(i){ return location.href.split("#")[0]+"#play&r="+i; }
+function shareTab(){
+  var file=location.protocol==="file:";
+  var long=shareURL(0);
+  var blocks=S.hunt.routes.map(function(r,i){
+    return '<div class="sub"><h3>'+esc(r.name)+" — "+r.seq.length+" stations</h3>"+
+      '<div class="linkbox">'+esc(shortURL(i))+"</div>"+
+      '<div class="btnrow" style="margin-top:10px">'+
+        '<button class="btn quiet sm" data-act="copyshort" data-i="'+i+'">Copy link</button>'+
+        '<button class="btn quiet sm" data-act="copylink" data-i="'+i+'">Copy self-contained link</button></div>'+
+      '<div id="qr'+i+'" style="margin-top:12px;display:flex;justify-content:center"></div></div>';
+  }).join("");
+  return publishPanel()+
+    '<div class="panel"><div class="panelhead"><h2 class="placename">One link per team</h2></div>'+
+    (file?'<div class="flash bad">This page is open from your hard drive. Location checks need https, so put the file online before the event — GitHub Pages is free and takes five minutes.</div>':"")+
+    '<p class="lede" style="font-size:1rem">The short link works because the whole game is stored inside this HTML file. Host the file, hand one link to each team, done.</p>'+
+    '<p class="hint" style="margin-bottom:16px">If you have edited the game here in the browser, your edits live in this browser and not in the hosted file. Either download the hunt file and rebuild your hosted copy, or use the self-contained link, which carries every word of the game inside the address itself ('+long.length+' characters — long, but it works anywhere).</p>'+
+    blocks+"</div>";
+}
+function drawQR(el,text,size){
+  if(!el) return;
+  el.innerHTML="";
+  if(typeof QRCode==="undefined"){ el.innerHTML='<p class="tiny">QR codes need a connection when the page loads.</p>'; return; }
+  if(text.length>1100){ el.innerHTML='<p class="tiny" style="max-width:32ch;text-align:center">Too much hunt to fit in a QR code — send the link instead.</p>'; return; }
+  try{ new QRCode(el,{text:text,width:size,height:size,correctLevel:QRCode.CorrectLevel.M}); }
+  catch(e){ el.innerHTML='<p class="tiny">Too long for a QR code.</p>'; }
+}
+
+/* ========== events ========== */
+document.addEventListener("click",function(e){
+  var t;
+  if((t=e.target.closest("[data-sel]"))){ S.sel=+t.getAttribute("data-sel"); render(); return; }
+  if((t=e.target.closest("[data-tab]"))){ S.tab=t.getAttribute("data-tab"); render(); return; }
+  if((t=e.target.closest("[data-route]"))){ S.routeSel=+t.getAttribute("data-route"); render(); return; }
+  if((t=e.target.closest("[data-pick]"))){ pickChoice(+t.getAttribute("data-pick")); return; }
+  var b=e.target.closest("[data-act]"); if(!b) return;
+  var a=b.getAttribute("data-act"), i=+b.getAttribute("data-i");
+  var h=S.hunt, r=h&&h.routes[S.routeSel];
+
+  if(a==="gopublish"){ S.screen="build"; S.tab="share"; render(); return; }
+  if(a==="usestale"){
+    S.hunt=S.stale; S.stale=null; accent(S.hunt.accent);
+    S.sel=0; S.routeSel=0; S.tab="stations"; saveDraft(); S.screen="build"; render(); return;
+  }
+  if(a==="restore"){
+    if(!confirm("Replace what is in this browser with the game built into the file?")) return;
+    S.hunt=repair(window.WAYPOINT_DEFAULT); accent(S.hunt.accent);
+    S.sel=0; S.routeSel=0; S.tab="stations"; saveDraft();
+    S.screen="build"; render(); return;
+  }
+  if(a==="new"){ S.hunt=blankHunt(); accent(S.hunt.accent); S.screen="build"; S.tab="stations"; S.sel=0; saveDraft(); render(); }
+  else if(a==="resume"){ S.screen="build"; S.tab="stations"; S.sel=0; render(); }
+  else if(a==="home"){ S.screen="home"; S.testing=false; render(); }
+  else if(a==="board"){ S.screen="board"; render(); }
+  else if(a==="import") importFile();
+  else if(a==="export") download((h.title||"hunt").replace(/[^\w\- ]+/g,"").slice(0,40)+".json", JSON.stringify(h,null,2));
+  else if(a==="wipe"){ if(confirm("Throw this hunt away and start blank?")){ S.hunt=blankHunt(); S.sel=0; saveDraft(); render(); } }
+  else if(a==="addstation"){ h.stations.push(newStation()); S.sel=h.stations.length-1; saveDraft(); render(); }
+  else if(a==="del"){
+    if(h.stations.length===1){ alert("A hunt needs at least one station."); return; }
+    if(!confirm("Delete this station? It will be removed from every route too.")) return;
+    var id=h.stations[S.sel].id;
+    h.stations.splice(S.sel,1);
+    h.routes.forEach(function(x){ x.seq=x.seq.filter(function(y){ return y!==id; }); });
+    S.sel=Math.max(0,S.sel-1); saveDraft(); render();
+  }
+  else if(a==="dupe"){ var c=JSON.parse(JSON.stringify(h.stations[S.sel])); c.id=uid(); c.name+=" (copy)";
+    h.stations.splice(S.sel+1,0,c); S.sel++; saveDraft(); render(); }
+  else if(a==="up"||a==="down"){
+    var j=a==="up"?S.sel-1:S.sel+1; if(j<0||j>=h.stations.length) return;
+    var tmp=h.stations[S.sel]; h.stations[S.sel]=h.stations[j]; h.stations[j]=tmp; S.sel=j; saveDraft(); render();
+  }
+  else if(a==="addopt"){ h.stations[S.sel].options.push({t:"",ok:false}); saveDraft(); render(); }
+  else if(a==="delopt"){ h.stations[S.sel].options.splice(i,1); saveDraft(); render(); }
+  else if(a==="here"){
+    if(!navigator.geolocation){ alert("No location available in this browser."); return; }
+    b.textContent="Finding…";
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var s=h.stations[S.sel];
+      s.lat=+pos.coords.latitude.toFixed(6); s.lng=+pos.coords.longitude.toFixed(6);
+      saveDraft(); render();
+    },function(){ alert("No fix. Go outside and allow location for this page."); render(); },{enableHighAccuracy:true,timeout:15000});
+  }
+  else if(a==="addroute"){ h.routes.push({name:"Route "+String.fromCharCode(65+h.routes.length),seq:[]}); S.routeSel=h.routes.length-1; saveDraft(); render(); }
+  else if(a==="delroute"){ if(h.routes.length===1){ alert("Keep at least one route."); return; }
+    h.routes.splice(S.routeSel,1); S.routeSel=0; saveDraft(); render(); }
+  else if(a==="raddst"){ var sel=$("#addst"); if(sel&&r){ r.seq.push(sel.value); saveDraft(); render(); } }
+  else if(a==="rdel"){ r.seq.splice(i,1); saveDraft(); render(); }
+  else if(a==="rup"||a==="rdown"){
+    var k=a==="rup"?i-1:i+1; if(k<0||k>=r.seq.length) return;
+    var q=r.seq[i]; r.seq[i]=r.seq[k]; r.seq[k]=q; saveDraft(); render();
+  }
+  else if(a==="rotate"){ rotateRoutes(); }
+  else if(a==="copyshort"||a==="copylink"){
+    var url=a==="copyshort"?shortURL(i):shareURL(i);
+    var was=b.textContent;
+    var done=function(){ b.textContent="Copied"; setTimeout(function(){ b.textContent=was; },1500); };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done,function(){ prompt("Copy:",url); });
+    else prompt("Copy:",url);
+  }
+  else if(a==="rebake") rebake();
+  else if(a==="sheet"){
+    download((S.hunt.title||"hunt").replace(/[^\w\- ]+/g,"").slice(0,40)+" facilitator sheet.html", buildSheet(), "text/html");
+  }
+  else if(a==="testplay"){ S.testing=true; S.screen="play"; S.prog=newProgress(); MEDIA={}; render(); }
+  else if(a==="backtobuild"){ S.testing=false; S.screen="build"; render(); }
+  else if(a==="begin") beginGame();
+  else if(a==="checkgps") checkGPS();
+  else if(a==="override"){
+    var st=current(); S.prog.overrides.push(st.id); S.tries=0; arrive();
+  }
+  else if(a==="arrived") arrive();
+  else if(a==="check") checkAnswer();
+  else if(a==="hint") useHint();
+  else if(a==="submitphoto"){ var s2=current(); if(MEDIA[s2.id]) complete(s2,"photo submitted",true); }
+  else if(a==="next"){
+    S.prog.i++; S.prog.phase="nav"; S.tries=0; saveProgress(); render();
+  }
+  else if(a==="report"){ download((S.prog.team||"team").replace(/[^\w\- ]+/g,"")+" results.html", buildReport(), "text/html"); }
+  else if(a==="copyresult"){
+    var code=resultCode();
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(
+      function(){ b.textContent="Copied — send it to your facilitator"; },function(){ prompt("Copy this:",code); });
+    else prompt("Copy this:",code);
+  }
+  else if(a==="addcode"){
+    var el=$("#code");
+    try{ var d=b64decode(el.value.trim()); S.board.push(d); S.flash={kind:"good",msg:"Added "+(d.t||"team")+"."}; }
+    catch(err){ S.flash={kind:"bad",msg:"That code didn't decode. Ask them to copy it again."}; }
+    render();
+  }
+  else if(a==="clearboard"){ if(confirm("Clear the scoreboard?")){ S.board=[]; render(); } }
+  else if(a==="resetprog"){
+    if(!confirm("Wipe this team's progress and start the hunt again?")) return;
+    S.prog=newProgress(); MEDIA={}; saveProgress(); saveMedia(); render();
+  }
+});
+
+function beginGame(){
+  var h=S.hunt, p=S.prog;
+  var team=$("#team"), names=[].slice.call(document.querySelectorAll(".pname")).map(function(x){ return x.value.trim(); });
+  var picked=document.querySelector('input[name="route"]:checked');
+  p.route = picked?+picked.value:(p.route||0);
+  p.team = team?team.value.trim():"";
+  p.players = names.filter(function(n){ return n; });
+  if(!p.team){ S.flash={kind:"bad",msg:"Give the team a name first."}; render(); return; }
+  if(h.askNames && p.players.length<h.minPlayers){
+    S.flash={kind:"bad",msg:"This game needs at least "+h.minPlayers+" names."}; render(); return;
+  }
+  p.begun=true; p.started=Date.now(); p.phase="nav"; p.i=0;
+  buildNameSlots();
+  saveProgress(); render();
+}
+
+function rotateRoutes(){
+  var h=S.hunt, base=h.routes[S.routeSel];
+  if(!base||base.seq.length<3){ alert("Build one full route first, then rotate it."); return; }
+  var n=Math.max(2,Math.min(12,+($("#nrot").value)||5));
+  var pin=$("#pinends").value;
+  var first=pin!=="none"?base.seq[0]:null;
+  var last=pin==="both"?base.seq[base.seq.length-1]:null;
+  var mid=base.seq.slice(first?1:0, last?base.seq.length-1:base.seq.length);
+  var out=[];
+  for(var k=0;k<n;k++){
+    var off=Math.round(k*mid.length/n);
+    var dir=k%2===0?1:-1;
+    var seq=[];
+    for(var i=0;i<mid.length;i++){
+      var idx=((off+dir*i)%mid.length+mid.length)%mid.length;
+      seq.push(mid[idx]);
+    }
+    out.push({ name:"Route "+String.fromCharCode(65+k), seq:(first?[first]:[]).concat(seq, last?[last]:[]) });
+  }
+  h.routes=out; S.routeSel=0; saveDraft(); render();
+}
+
+function importFile(){
+  var inp=document.createElement("input");
+  inp.type="file"; inp.accept=".json,application/json";
+  inp.onchange=function(){
+    var f=inp.files&&inp.files[0]; if(!f) return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{
+        S.hunt=repair(JSON.parse(rd.result)); accent(S.hunt.accent);
+        S.screen="build"; S.tab="stations"; S.sel=0; S.routeSel=0;
+        S.flash={kind:"good",msg:"Hunt opened."}; saveDraft(); render();
+      }catch(e){ S.flash={kind:"bad",msg:"That file isn't a Waypoint hunt."}; render(); }
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+}
+
+document.addEventListener("input",function(e){
+  var el=e.target, h=S.hunt; if(!h) return;
+  var f=el.getAttribute&&el.getAttribute("data-f");
+  if(f){
+    var s=h.stations[S.sel], v=el.value;
+    if(f==="points"||f==="radius"||f==="tol") v=num(v,0);
+    if(f==="lat"||f==="lng") v=v.trim()===""?null:num(v,null);
+    s[f]=v;
+    if(f==="name"){ var row=document.querySelector('[data-sel="'+S.sel+'"] .elname'); if(row) row.textContent=v||"Untitled"; }
+    saveDraft(); return;
+  }
+  var o=el.getAttribute&&el.getAttribute("data-opt");
+  if(o!==null&&o!==undefined){ h.stations[S.sel].options[+o].t=el.value; saveDraft(); return; }
+  var rn=el.getAttribute&&el.getAttribute("data-r");
+  if(rn){ h.routes[S.routeSel][rn]=el.value; saveDraft(); render(); return; }
+  var hk=el.getAttribute&&el.getAttribute("data-h");
+  if(hk){
+    if(hk==="askNames") h[hk]=el.checked;
+    else if(["minPlayers","maxPlayers","hintCost"].indexOf(hk)>=0) h[hk]=num(el.value,0);
+    else h[hk]=el.value;
+    if(hk==="accent") accent(el.value);
+    saveDraft();
+  }
+});
+
+document.addEventListener("change",function(e){
+  var el=e.target, h=S.hunt;
+  if(el.name==="kind"&&h){ h.stations[S.sel].kind=el.value; saveDraft(); render(); return; }
+  var ok=el.getAttribute&&el.getAttribute("data-ok");
+  if(ok!==null&&ok!==undefined&&h){ h.stations[S.sel].options[+ok].ok=el.checked; saveDraft(); return; }
+  if(el.id==="shot"&&el.files&&el.files[0]){
+    var st=current();
+    var lab=document.querySelector('label[for="shot"]');
+    if(lab) lab.textContent="Processing…";
+    shrink(el.files[0],function(data){
+      if(!data){ S.flash={kind:"bad",msg:"That image wouldn't load. Try again."}; render(); return; }
+      MEDIA[st.id]=data; saveMedia(); render();
+    });
+  }
+});
+
+boot();
+})();
+
+/* ===== export: a ready-to-host copy, and the facilitator sheet ===== */
+function stationLabel(i){
+  var h=S.hunt, id=h.stations[i].id;
+  var everyFirst=h.routes.length&&h.routes.every(function(r){ return r.seq[0]===id; });
+  var everyLast =h.routes.length&&h.routes.every(function(r){ return r.seq[r.seq.length-1]===id; });
+  if(everyFirst) return "START";
+  if(everyLast)  return "FINISH";
+  var n=0;
+  for(var k=0;k<=i;k++){
+    var kid=h.stations[k].id;
+    var kf=h.routes.length&&h.routes.every(function(r){ return r.seq[0]===kid; });
+    var kl=h.routes.length&&h.routes.every(function(r){ return r.seq[r.seq.length-1]===kid; });
+    if(!kf&&!kl) n++;
+  }
+  return "S"+n;
+}
+function labelOf(id){
+  for(var i=0;i<S.hunt.stations.length;i++) if(S.hunt.stations[i].id===id) return stationLabel(i);
+  return "?";
+}
+/* Google Maps allows ten stops per set of directions, so chunk with a one-stop overlap */
+function mapLinks(seq){
+  var st=seq.map(stationById).filter(function(s){ return s&&s.lat!=null; });
+  var out=[], i=0;
+  while(i<st.length-1){
+    var chunk=st.slice(i,i+10);
+    if(chunk.length<2) break;
+    var u="https://www.google.com/maps/dir/?api=1&travelmode=walking&origin="+chunk[0].lat+","+chunk[0].lng+
+          "&destination="+chunk[chunk.length-1].lat+","+chunk[chunk.length-1].lng;
+    var w=chunk.slice(1,-1);
+    if(w.length) u+="&waypoints="+w.map(function(s){ return s.lat+","+s.lng; }).join("%7C");
+    out.push({ from:i+1, to:i+chunk.length, url:u });
+    i+=chunk.length-1;
+  }
+  return out;
+}
+function answerText(s){
+  if(s.kind==="choice"){ var o=s.options.filter(function(x){return x.ok&&x.t;})[0]; return o?o.t:"—"; }
+  if(s.kind==="number") return s.answer+(s.tol?" (accept ±"+s.tol+")":"");
+  if(s.kind==="text"){ var a=String(s.answer).split("|");
+    return a[0]+(a.length>1?"   [also accepts: "+a.slice(1).join(", ")+"]":""); }
+  if(s.kind==="photo") return "Photo — always accepted, review it afterwards";
+  return "Nothing to answer";
+}
+function buildSheet(){
+  var h=S.hunt, n=h.routes.length?h.routes[0].seq.length:0;
+  var grid="";
+  if(h.routes.length){
+    grid='<table><tr><th>Step</th>'+h.routes.map(function(r){return "<th>"+esc(r.name)+"</th>";}).join("")+"</tr>";
+    for(var i=0;i<n;i++){
+      grid+='<tr><td class=step>'+(i+1)+"</td>"+h.routes.map(function(r){
+        var s=stationById(r.seq[i]);
+        return "<td><b>"+(s?labelOf(s.id):"—")+"</b> "+esc(s?s.name:"")+"</td>";
+      }).join("")+"</tr>";
+    }
+    grid+="</table>";
+  }
+  var blocks=h.routes.map(function(r){
+    var tot=0, rows="";
+    r.seq.forEach(function(id,i){
+      var s=stationById(id); if(!s) return;
+      var leg="—";
+      if(i<r.seq.length-1){ var nx=stationById(r.seq[i+1]);
+        if(nx&&s.lat!=null&&nx.lat!=null){ var d=metres(s.lat,s.lng,nx.lat,nx.lng)*1.25; tot+=d; leg=Math.round(d)+" m"; } }
+      rows+='<tr><td class=step>'+(i+1)+"</td><td><b>"+labelOf(id)+"</b></td><td>"+esc(s.name)+
+        "</td><td>"+esc(KINDS[s.kind])+'</td><td class=num>'+leg+"</td></tr>";
+    });
+    var links=mapLinks(r.seq).map(function(l){
+      return '<a class=maplink target=_blank rel=noopener href="'+l.url+'">Stops '+l.from+"–"+l.to+" in Google Maps</a>";
+    }).join("");
+    var first=stationById(r.seq[1])||stationById(r.seq[0]);
+    var open=first?(first.navAlt||first.nav):"";
+    return "<h3 class=rh>"+esc(r.name)+"</h3>"+
+      '<p class=meta>'+(tot/1000).toFixed(1)+" km on foot · starts at "+esc(first?first.name:"")+"</p>"+
+      (open?'<p class=open><b>Opening leg:</b> '+esc(open)+"</p>":"")+
+      '<p class=links>'+links+"</p>"+
+      '<table class=rt><tr><th>Step</th><th>Ref</th><th>Station</th><th>Type</th><th>To next</th></tr>'+rows+"</table>";
+  }).join("");
+  var cards=h.stations.map(function(s,i){
+    return "<section><h3>"+stationLabel(i)+" · "+esc(s.name)+"</h3>"+
+      '<p class=meta>'+(s.lat==null?"no coordinates set":s.lat+", "+s.lng+" · arrive within "+s.radius+" m")+
+      " · "+esc(KINDS[s.kind])+" · "+s.points+" pts"+
+      (s.lat==null?"":' · <a target=_blank rel=noopener href="https://www.google.com/maps/search/?api=1&query='+s.lat+","+s.lng+'">Google Maps</a>'+
+        ' · <a target=_blank rel=noopener href="https://www.openstreetmap.org/?mlat='+s.lat+"&mlon="+s.lng+"#map=18/"+s.lat+"/"+s.lng+'">OSM</a>')+
+      "</p>"+
+      (s.nav?'<p><span class=k>Walking clue</span> '+esc(s.nav)+"</p>":"")+
+      (s.navAlt?'<p><span class=k>If first stop</span> '+esc(s.navAlt)+"</p>":"")+
+      (s.prompt?'<p><span class=k>Task</span> '+esc(s.prompt)+"</p>":"")+
+      '<p><span class=k>Answer</span> <b class=ans>'+esc(answerText(s))+"</b></p>"+
+      (s.hint?'<p><span class=k>Hint (−'+h.hintCost+")</span> "+esc(s.hint)+"</p>":"")+
+      "</section>";
+  }).join("");
+  return "<!DOCTYPE html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"+
+    "<title>"+esc(h.title)+" — facilitator sheet</title><style>"+
+    "body{font-family:system-ui,-apple-system,sans-serif;max-width:1000px;margin:26px auto;padding:0 18px;color:#0B2340;line-height:1.45}"+
+    "h1{margin:0 0 4px;font-size:1.7rem}h2{margin:32px 0 8px;font-size:1.15rem;border-bottom:2px solid #0B2340;padding-bottom:4px}"+
+    "h3{margin:16px 0 3px;font-size:1rem}h3.rh{margin-top:26px;font-size:1.1rem;color:#B5175C}"+
+    "table{border-collapse:collapse;width:100%;font-size:.8rem;margin-top:8px}"+
+    "th,td{border:1px solid #C7D2DA;padding:4px 6px;text-align:left;vertical-align:top}th{background:#D3E3DE}"+
+    "td.step{background:#F3F6F5;text-align:center;font-weight:700;width:3em}td.num{text-align:right;color:#3F5D77}"+
+    "table.rt{max-width:660px}section{border-bottom:1px solid #eee;padding-bottom:10px;break-inside:avoid}"+
+    ".meta{color:#3F5D77;font-size:.83rem;margin:2px 0 6px}p{margin:4px 0}"+
+    ".k{display:inline-block;min-width:96px;color:#3F5D77;font-size:.8rem;font-weight:600}.ans{color:#B5175C}"+
+    ".links{margin:8px 0 2px}a.maplink{display:inline-block;margin:0 8px 6px 0;padding:6px 11px;border:1.5px solid #B5175C;"+
+    "border-radius:3px;color:#B5175C;text-decoration:none;font-size:.82rem;font-weight:600}a.maplink:hover{background:#F6E3EC}"+
+    "@media print{body{margin:0;font-size:10pt}h2{page-break-after:avoid}a.maplink{border:none;padding:0}}"+
+    "</style></head><body><h1>"+esc(h.title)+" — facilitator sheet</h1>"+
+    '<p class=meta>'+h.stations.length+" stations · "+h.routes.length+" routes · teams of "+h.minPlayers+"–"+h.maxPlayers+
+    " · hint costs "+h.hintCost+" points · generated "+new Date().toISOString().slice(0,10)+"</p>"+
+    (grid?"<h2>Who goes where, and when</h2><p>Read down a column for one team&rsquo;s route. Read across a row to see where every team is at the same moment.</p>"+grid:"")+
+    (blocks?"<h2>Route by route, with maps</h2><p>Google Maps allows ten stops per set of directions, so long routes come as several links that overlap by one stop.</p>"+blocks:"")+
+    "<h2>Every station</h2>"+cards+"</body></html>";
+}
+function rebake(){
+  var name=(S.hunt.title||"hunt").replace(/[^\w\- ]+/g,"").slice(0,40);
+  fetch(location.href,{cache:"no-store"}).then(function(r){ return r.text(); }).then(function(txt){
+    var M1="/*HUNT_"+"START*/", M2="/*HUNT_"+"END*/";
+    var a=txt.indexOf(M1), b=txt.indexOf(M2);
+    if(a<0||b<0) throw new Error("no markers");
+    var json=JSON.stringify(S.hunt).replace(/<\/script/gi,"<\\/script");
+    download(name+".html", txt.slice(0,a)+M1+"window.WAYPOINT_DEFAULT = "+json+";"+txt.slice(b), "text/html");
+    S.flash={kind:"good",msg:"Downloaded. Upload that file over the hosted one and every team link serves your edits."};
+    render();
+  }).catch(function(){
+    S.flash={kind:"bad",msg:"Couldn't read this page's own source — that only works when the file is served over http or https, not opened from your hard drive. Host it first, then use this button there."};
+    render();
+  });
+}
+
+</script>
+</body>
+</html>
