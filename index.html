@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Wild Goose</title>
+<title>Scenic Route</title>
 <meta name="description" content="Build multimedia scavenger hunts, guided tours and quizzes. One file, no account, no server.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
@@ -223,7 +223,7 @@ table.grid tr.top td{background:var(--accent-tint);font-weight:700}
   <header class="masthead noprint">
     <div class="mark">
       <img class="brandmark" data-logo="" alt="Eurotender Association">
-      Wild Goose
+      Scenic Route
     </div>
     <div class="spacer"></div>
     <div class="btnrow" id="navbtns"></div>
@@ -231,7 +231,7 @@ table.grid tr.top td{background:var(--accent-tint);font-weight:700}
   <main id="app"></main>
   <footer class="sitefoot noprint">
     <img data-logo="" alt="">
-    <span><b>Wild Goose</b> — made by the Eurotender Association, Szeged</span>
+    <span><b>Scenic Route</b> — made by the Eurotender Association, Szeged</span>
   </footer>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -1233,7 +1233,7 @@ function importFile(){
         S.hunt=repair(JSON.parse(rd.result)); accent(S.hunt.accent);
         S.screen="build"; S.tab="stations"; S.sel=0; S.routeSel=0;
         S.flash={kind:"good",msg:"Hunt opened."}; saveDraft(); render();
-      }catch(e){ S.flash={kind:"bad",msg:"That file isn't a Wild Goose hunt."}; render(); }
+      }catch(e){ S.flash={kind:"bad",msg:"That file wasn't made by Scenic Route."}; render(); }
     };
     rd.readAsText(f);
   };
