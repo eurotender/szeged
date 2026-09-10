@@ -1262,8 +1262,6 @@ document.addEventListener("change",function(e){
   }
 });
 
-boot();
-})();
 
 /* ===== export: a ready-to-host copy, and the facilitator sheet ===== */
 function stationLabel(i){
@@ -1380,19 +1378,41 @@ function buildSheet(){
 }
 function rebake(){
   var name=(S.hunt.title||"hunt").replace(/[^\w\- ]+/g,"").slice(0,40);
-  fetch(location.href,{cache:"no-store"}).then(function(r){ return r.text(); }).then(function(txt){
-    var M1="/*HUNT_"+"START*/", M2="/*HUNT_"+"END*/";
+  var M1="/*HUNT_"+"START*/", M2="/*HUNT_"+"END*/";
+  var json=JSON.stringify(S.hunt).replace(/<\/script/gi,"<\\/script");
+  function bake(txt){
+    if(!txt) return null;
     var a=txt.indexOf(M1), b=txt.indexOf(M2);
-    if(a<0||b<0) throw new Error("no markers");
-    var json=JSON.stringify(S.hunt).replace(/<\/script/gi,"<\\/script");
-    download(name+".html", txt.slice(0,a)+M1+"window.WAYPOINT_DEFAULT = "+json+";"+txt.slice(b), "text/html");
-    S.flash={kind:"good",msg:"Downloaded. Upload that file over the hosted one and every team link serves your edits."};
+    if(a<0||b<0) return null;
+    return txt.slice(0,a)+M1+"window.WAYPOINT_DEFAULT = "+json+";"+txt.slice(b);
+  }
+  /* the page keeps a pristine copy of itself taken before it drew anything,
+     so this works offline, from a hard drive, and inside preview frames */
+  var out=bake(PRISTINE);
+  if(out){
+    download(name+".html", out, "text/html");
+    S.flash={kind:"good",msg:"Downloaded. Rename it to index.html and upload it over the one on your host — every team link will then serve this version."};
+    render(); return;
+  }
+  fetch(location.href,{cache:"no-store"}).then(function(r){ return r.text(); }).then(function(txt){
+    var o=bake(txt);
+    if(!o) throw new Error("markers");
+    download(name+".html", o, "text/html");
+    S.flash={kind:"good",msg:"Downloaded. Rename it to index.html and upload it over the one on your host."};
     render();
   }).catch(function(){
-    S.flash={kind:"bad",msg:"Couldn't read this page's own source — that only works when the file is served over http or https, not opened from your hard drive. Host it first, then use this button there."};
+    S.flash={kind:"bad",msg:"Could not rebuild the file in this browser. Use Download hunt file instead and send the .json on."};
     render();
   });
 }
+
+
+/* snapshot of the untouched page, taken before the app renders anything */
+var PRISTINE="";
+try{ PRISTINE="<!DOCTYPE html>\n"+document.documentElement.outerHTML; }catch(e){}
+
+boot();
+})();
 
 </script>
 </body>
