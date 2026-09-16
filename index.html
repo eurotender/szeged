@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Scenic Route — editor preview</title>
+<title>Scenic Route</title>
 <meta name="description" content="Build multimedia scavenger hunts, guided tours and quizzes. One file, no account, no server.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
@@ -509,7 +509,7 @@ function slim(h){
 
 /* ========== state ========== */
 var EDIT_KEY="zsani";
-var EDIT=true; /* EDITOR PREVIEW COPY — builder always open. Do not give this file to players. */
+var EDIT=new RegExp("[#&]"+EDIT_KEY+"\\b").test(location.hash||"");
 var S = { screen:"home", hunt:null, stale:null, sel:0, tab:"stations", routeSel:0,
           prog:null, flash:null, testing:false, busy:false, tries:0, board:[] };
 var MEDIA = {};
